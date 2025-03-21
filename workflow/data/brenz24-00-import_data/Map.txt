@@ -1,0 +1,385 @@
+Drug	Well	ConcMock
+2,3-DHBA	A1	1
+2,3-DHBA	A2	2
+2,3-DHBA	B1	3
+2,3-DHBA	B2	4
+4-aminosalicylic acid	A3	1
+4-aminosalicylic acid	A4	2
+4-aminosalicylic acid	B3	3
+4-aminosalicylic acid	B4	4
+Acetylsalicylic acid	A5	1
+Acetylsalicylic acid	A6	2
+Acetylsalicylic acid	B5	3
+Acetylsalicylic acid	B6	4
+Adrenalin	A7	1
+Adrenalin	A8	2
+Adrenalin	B7	3
+Adrenalin	B8	4
+Amikacin	A9	1
+Amikacin	A10	2
+Amikacin	B9	3
+Amikacin	B10	4
+Amoxicillin	A11	1
+Amoxicillin	A12	2
+Amoxicillin	B11	3
+Amoxicillin	B12	4
+Ascorbic acid (vitamin C)	A13	1
+Ascorbic acid (vitamin C)	A14	2
+Ascorbic acid (vitamin C)	B13	3
+Ascorbic acid (vitamin C)	B14	4
+Azithromycin	A15	1
+Azithromycin	A16	2
+Azithromycin	B15	3
+Azithromycin	B16	4
+Aztreonam	A17	1
+Aztreonam	A18	2
+Aztreonam	B17	3
+Aztreonam	B18	4
+Bacitracin	A19	1
+Bacitracin	A20	2
+Bacitracin	B19	3
+Bacitracin	B20	4
+Benzalkonium	A21	1
+Benzalkonium	A22	2
+Benzalkonium	B21	3
+Benzalkonium	B22	4
+Berberine	A23	1
+Berberine	A24	2
+Berberine	B23	3
+Berberine	B24	4
+Bleomycin	C1	1
+Bleomycin	C2	2
+Bleomycin	D1	3
+Bleomycin	D2	4
+Butyrate	C3	1
+Butyrate	C4	2
+Butyrate	D3	3
+Butyrate	D4	4
+Caffeine	C5	1
+Caffeine	C6	2
+Caffeine	D5	3
+Caffeine	D6	4
+Capsaicin	C7	1
+Capsaicin	C8	2
+Capsaicin	D7	3
+Capsaicin	D8	4
+Carvacrol	C9	1
+Carvacrol	C10	2
+Carvacrol	D9	3
+Carvacrol	D10	4
+Catechin	C11	1
+Catechin	C12	2
+Catechin	D11	3
+Catechin	D12	4
+CCCP	C13	1
+CCCP	C14	2
+CCCP	D13	3
+CCCP	D14	4
+Cefaclor	C15	1
+Cefaclor	C16	2
+Cefaclor	D15	3
+Cefaclor	D16	4
+Cefotaxime	C17	1
+Cefotaxime	C18	2
+Cefotaxime	D17	3
+Cefotaxime	D18	4
+Cefsulodin	C19	1
+Cefsulodin	C20	2
+Cefsulodin	D19	3
+Cefsulodin	D20	4
+Cerulenin	C21	1
+Cerulenin	C22	2
+Cerulenin	D21	3
+Cerulenin	D22	4
+Chloramphenicol	C23	1
+Chloramphenicol	C24	2
+Chloramphenicol	D23	3
+Chloramphenicol	D24	4
+Chlorhexidine	E1	1
+Chlorhexidine	E8	2
+Chlorhexidine	F1	3
+Chlorhexidine	F8	4
+Cinnamaldehyde	E3	1
+Cinnamaldehyde	E2	2
+Cinnamaldehyde	F3	3
+Cinnamaldehyde	F2	4
+Ciprofloxacin	E5	1
+Ciprofloxacin	E4	2
+Ciprofloxacin	F5	3
+Ciprofloxacin	F4	4
+Citric acid	E7	1
+Citric acid	E6	2
+Citric acid	F7	3
+Citric acid	F6	4
+Clarithromycin	E9	1
+Clarithromycin	E10	2
+Clarithromycin	F9	3
+Clarithromycin	F10	4
+Clindamycin	E11	1
+Clindamycin	E12	2
+Clindamycin	F11	3
+Clindamycin	F12	4
+Colistin	E13	1
+Colistin	E14	2
+Colistin	F13	3
+Colistin	F14	4
+Curcumin	E15	1
+Curcumin	E16	2
+Curcumin	F15	3
+Curcumin	F16	4
+Cycloserine D	E17	1
+Cycloserine D	E18	2
+Cycloserine D	F17	3
+Cycloserine D	F18	4
+Deoxycholic acid	E19	1
+Deoxycholic acid	E20	2
+Deoxycholic acid	F19	3
+Deoxycholic acid	F20	4
+Dopamine	E21	1
+Dopamine	E22	2
+Dopamine	F21	3
+Dopamine	F22	4
+Doxorubicin	E23	1
+Doxorubicin	E24	2
+Doxorubicin	F23	3
+Doxorubicin	F24	4
+Doxycycline	G1	1
+Doxycycline	G2	2
+Doxycycline	H1	3
+Doxycycline	H2	4
+EGCG	G3	1
+EGCG	G4	2
+EGCG	H3	3
+EGCG	H4	4
+Erythromycin	G5	1
+Erythromycin	G6	2
+Erythromycin	H5	3
+Erythromycin	H6	4
+Estradiol	G7	1
+Estradiol	G8	2
+Estradiol	H7	3
+Estradiol	H8	4
+Ethyl Vanillin	G9	1
+Ethyl Vanillin	G10	2
+Ethyl Vanillin	H9	3
+Ethyl Vanillin	H10	4
+Eugenol	G11	1
+Eugenol	G12	2
+Eugenol	H11	3
+Eugenol	H12	4
+Fosfomycin	G13	1
+Fosfomycin	G14	2
+Fosfomycin	H13	3
+Fosfomycin	H14	4
+Fusidic acid	G15	1
+Fusidic acid	G16	2
+Fusidic acid	H15	3
+Fusidic acid	H16	4
+Gentamicin	G17	1
+Gentamicin	G18	2
+Gentamicin	H17	3
+Gentamicin	H18	4
+Hydrocortisone	G19	1
+Hydrocortisone	G20	2
+Hydrocortisone	H19	3
+Hydrocortisone	H20	4
+Ibuprofen	G21	1
+Ibuprofen	G22	2
+Ibuprofen	H21	3
+Ibuprofen	H22	4
+Imipenem	G23	1
+Imipenem	G24	2
+Imipenem	H23	3
+Imipenem	H24	4
+Indole	I1	1
+Indole	I2	2
+Indole	J1	3
+Indole	J2	4
+Levofloxacin	I3	1
+Levofloxacin	I4	2
+Levofloxacin	J3	3
+Levofloxacin	J4	4
+Lithocholic acid	I5	1
+Lithocholic acid	I6	2
+Lithocholic acid	J5	3
+Lithocholic acid	J6	4
+Loperamide	I7	1
+Loperamide	I8	2
+Loperamide	J7	3
+Loperamide	J8	4
+Mecillinam	I9	1
+Mecillinam	I10	2
+Mecillinam	J9	3
+Mecillinam	J10	4
+Menthol	I11	1
+Menthol	I12	2
+Menthol	J11	3
+Menthol	J12	4
+Water	I13	1
+Water	I14	2
+Water	J13	3
+Water	J14	4
+Meropenem	I15	1
+Meropenem	I16	2
+Meropenem	J15	3
+Meropenem	J16	4
+Metformin	I17	1
+Metformin	I18	2
+Metformin	J17	3
+Metformin	J18	4
+Metronidazole	I19	1
+Metronidazole	I20	2
+Metronidazole	J19	3
+Metronidazole	J20	4
+Minocycline	I21	1
+Minocycline	I22	2
+Minocycline	J21	3
+Minocycline	J22	4
+Moxifloxacin	I23	1
+Moxifloxacin	I24	2
+Moxifloxacin	J23	3
+Moxifloxacin	J24	4
+Nitrofurantoin	K1	1
+Nitrofurantoin	K2	2
+Nitrofurantoin	L1	3
+Nitrofurantoin	L2	4
+Noradrenalin	K3	1
+Noradrenalin	K4	2
+Noradrenalin	L3	3
+Noradrenalin	L4	4
+Novobiocin	K5	1
+Novobiocin	K6	2
+Novobiocin	L5	3
+Novobiocin	L6	4
+Omeprazole	K7	1
+Omeprazole	K8	2
+Omeprazole	L7	3
+Omeprazole	L8	4
+Oxacillin	K9	1
+Oxacillin	K10	2
+Oxacillin	L9	3
+Oxacillin	L10	4
+Paraquat	K11	1
+Paraquat	K12	2
+Paraquat	L11	3
+Paraquat	L12	4
+Penicillin G	K13	1
+Penicillin G	K14	2
+Penicillin G	L13	3
+Penicillin G	L14	4
+Phleomycin	K15	1
+Phleomycin	K16	2
+Phleomycin	L15	3
+Phleomycin	L16	4
+Piperacillin	K17	1
+Piperacillin	K18	2
+Piperacillin	L17	3
+Piperacillin	L18	4
+PMS	K19	1
+PMS	K20	2
+PMS	L19	3
+PMS	L20	4
+Polymyxin B	K21	1
+Polymyxin B	K22	2
+Polymyxin B	L21	3
+Polymyxin B	L22	4
+Procaine	K23	1
+Procaine	K24	2
+Procaine	L23	3
+Procaine	L24	4
+Progesterone	M1	1
+Progesterone	M2	2
+Progesterone	N1	3
+Progesterone	N2	4
+Pseudomonic acid	M3	1
+Pseudomonic acid	M4	2
+Pseudomonic acid	N3	3
+Pseudomonic acid	N4	4
+Puromycin	M5	1
+Puromycin	M6	2
+Puromycin	N5	3
+Puromycin	N6	4
+Quercetin	M7	1
+Quercetin	M8	2
+Quercetin	N7	3
+Quercetin	N8	4
+Quinine	M9	1
+Quinine	M10	2
+Quinine	N9	3
+Quinine	N10	4
+Rifampicin	M11	1
+Rifampicin	M12	2
+Rifampicin	N11	3
+Rifampicin	N12	4
+Salicylate	M13	1
+Salicylate	M14	2
+Salicylate	N13	3
+Salicylate	N14	4
+Serotonine	M15	1
+Serotonine	M16	2
+Serotonine	N15	3
+Serotonine	N16	4
+Sodium benzoate	M17	1
+Sodium benzoate	M18	2
+Sodium benzoate	N17	3
+Sodium benzoate	N18	4
+Sorbitol	M19	1
+Sorbitol	M20	2
+Sorbitol	N19	3
+Sorbitol	N20	4
+Spectinomycin	M21	1
+Spectinomycin	M22	2
+Spectinomycin	N21	3
+Spectinomycin	N22	4
+Spiramycin	M23	1
+Spiramycin	M24	2
+Spiramycin	N23	3
+Spiramycin	N24	4
+Sulfamethoxazol	O1	1
+Sulfamethoxazol	O2	2
+Sulfamethoxazol	P1	3
+Sulfamethoxazol	P2	4
+Sulfamonomethoxine	O3	1
+Sulfamonomethoxine	O4	2
+Sulfamonomethoxine	P3	3
+Sulfamonomethoxine	P4	4
+Taurocholic acid	O5	1
+Taurocholic acid	O6	2
+Taurocholic acid	P5	3
+Taurocholic acid	P6	4
+Testosterone	O7	1
+Testosterone	O8	2
+Testosterone	P7	3
+Testosterone	P8	4
+Tetracycline	O9	1
+Tetracycline	O10	2
+Tetracycline	P9	3
+Tetracycline	P10	4
+Thymol	O11	1
+Thymol	O12	2
+Thymol	P11	3
+Thymol	P12	4
+Trimethoprim	O13	1
+Trimethoprim	O14	2
+Trimethoprim	P13	3
+Trimethoprim	P14	4
+Tobramycin	O15	1
+Tobramycin	O16	2
+Tobramycin	P15	3
+Tobramycin	P16	4
+Vanillic acid	O17	1
+Vanillic acid	O18	2
+Vanillic acid	P17	3
+Vanillic acid	P18	4
+Vanillin	O19	1
+Vanillin	O20	2
+Vanillin	P19	3
+Vanillin	P20	4
+Verapamil	O21	1
+Verapamil	O22	2
+Verapamil	P21	3
+Verapamil	P22	4
+Water	O23	5
+Water	O24	6
+Water	P23	7
+Water	P24	8

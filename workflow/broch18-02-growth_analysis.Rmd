@@ -1,0 +1,495 @@
+---
+title: "broch18-02-growth_analysis"
+date: "Compiled at `r format(Sys.time(), '%Y-%m-%d %H:%M:%S', tz = 'UTC')` UTC"
+output: github_document
+params:
+  name: "broch18-02-growth_analysis" # change if you rename file
+---
+
+```{r here, message=FALSE}
+here::i_am(paste0(params$name, ".Rmd"), uuid = "bb69b453-2d3d-4d97-9c47-66b7a13a22cb")
+```
+
+The purpose of this document is ...
+
+```{r packages}
+library("tidyverse")
+library("DGrowthR")
+```
+
+```{r directories}
+# create or *empty* the target directory, used to write this file's data: 
+projthis::proj_create_dir_target(params$name, clean = TRUE)
+
+# function to get path to target directory: path_target("sample.csv")
+path_target <- projthis::proj_path_target(params$name)
+
+# function to get path to previous data: path_source("00-import", "sample.csv")
+path_source <- projthis::proj_path_source(params$name)
+```
+
+## Read data
+
+```{r read.objects}
+# DGrowthR 
+dgobj.ecbw.logged <- readRDS(path_source("broch18-01-preprocess_data", "dgobj_ecbw_logged.rds"))
+
+```
+
+## Gather maxOD
+
+```{r max.od.calc}
+ecbw.max <- dgobj.ecbw.logged@od_data %>% 
+  group_by(curve_id) %>% 
+  summarise(maxOD = max(od)) %>% 
+  ungroup()
+
+# Add to metadata
+dgobj.ecbw.logged@metadata <- dgobj.ecbw.logged@metadata %>% 
+  left_join(ecbw.max, by="curve_id")
+
+```
+
+## Low dimensinoal representations
+
+```{r lowdim.viz}
+# BW
+dgobj.ecbw.logged <- estimate_fpca(dgobj.ecbw.logged)
+set.seed(42)
+dgobj.ecbw.logged <- estimate_umap(dgobj.ecbw.logged)
+
+```
+
+
+```{r bw.viz}
+plot_fpca(dgobj.ecbw.logged)
+plot_umap(dgobj.ecbw.logged)
+```
+
+
+## Plot max OD
+
+
+```{r max.od}
+bw.fpca <- plot_fpca(dgobj.ecbw.logged, color="maxOD") +
+  scale_color_distiller(palette="RdPu", direction=-1) +
+  labs(color="Maximum OD") +
+  theme_bw() +
+  theme(text = element_text(size=10),
+        axis.ticks.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.text.y = element_blank())
+        
+        #legend.title = element_text(size = 8),
+        #legend.key.size = unit(0.15, "cm"),
+      #legend.position = "inside",
+      #legend.position.inside = c(0.8, 0.85))
+  
+bw.umap <- plot_umap(dgobj.ecbw.logged, color="maxOD") +
+  scale_color_distiller(palette="RdPu", direction=-1) +
+  labs(color="Maximum OD") +
+  theme_bw() +
+  theme(text = element_text(size=10),
+        axis.ticks.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.text.y = element_blank(),
+        
+        #legend.title = element_text(size = 8),
+        #legend.key.size = unit(0.35, "cm"),
+        #text = element_text(size=10),
+        
+      legend.position = "inside",
+      legend.position.inside = c(0.07, 0.3))
+```
+
+```{r}
+bw.fpca
+```
+
+
+
+
+
+## Vanillin + Spectinomycin
+
+
+```{r}
+fpcaX <- dgobj.ecbw.logged@fpca$fdapace_obj$xiEst
+colnames(fpcaX) <- paste0("fpc", 1:ncol(fpcaX))
+
+fpca_df <- data.frame(fpcaX)
+fpca_df$curve_id <- names(dgobj.ecbw.logged@fpca$fdapace_obj$inputData$Lt)
+```
+
+```{r vanillin.spec}
+curve.labels <- dgobj.ecbw.logged@metadata %>% 
+  filter(#combination.id == "Spectinomycin.2:NoDurg.NA" |
+          (combination.id == "Control.NA:Spectinomycin.2" & query %in% c("Control.rep.1", "Control.rep.2")) |
+           
+           combination.id == "Vanillin.1:NoDurg.NA" | 
+           (combination.id == "Control.NA:Vanillin.1" & query == "Control.rep.1") | 
+           
+           
+         combination.id == "Vanillin.1:Spectinomycin.2" |
+           combination.id == "Spectinomycin.2:Vanillin.1") %>% 
+  
+  mutate(combination.label = case_when(combination.id %in% c("Spectinomycin.2:NoDurg.NA", "Control.NA:Spectinomycin.2") ~ "Spectinomycin",
+                               combination.id %in% c("Vanillin.1:NoDurg.NA", "Control.NA:Vanillin.1") ~ "Vanillin",
+                               combination.id %in% c("Vanillin.1:Spectinomycin.2", "Spectinomycin.2:Vanillin.1") ~ "Spectinomycin + Vanillin")) %>% 
+  
+  select(curve_id, combination.label)
+
+
+umap.spec <- dgobj.ecbw.logged@umap_coord %>% 
+  left_join(curve.labels, by="curve_id") %>% 
+  filter(!is.na(combination.label)) %>% 
+  
+  mutate(combination.label = factor(combination.label, levels = c("Spectinomycin", "Vanillin", "Spectinomycin + Vanillin")))
+
+spec.vanill.umap <- ggplot() +
+  
+  geom_point(data=fpca_df, aes(x=V1, y=V2), color="#b3b3b3", alpha=0.25) +
+  geom_point(data=umap.spec, aes(x=V1, y=V2, fill=combination.label), size=3, shape=21, color="black") +
+  
+  scale_fill_manual(values = c("#009E73", "#CC79A7", "#E69F00"),
+                    labels=c(latex2exp::TeX("Spectinomycin 3 $\\mu$g/mL"),
+                             latex2exp::TeX("Vanillin 200 $\\mu$g/mL"),
+                             "Spectinomycin + Vanillin"))+
+  
+  theme_bw() +
+  theme(legend.position = "bottom",
+        text=element_text(size=10),
+         axis.ticks.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.text.y = element_blank()) +
+  
+  labs(x="UMAP 1",
+       y="UMAP 2",
+       fill = "Treatment")
+
+
+###
+fpca.spec <- fpca_df %>% 
+  left_join(curve.labels, by="curve_id") %>% 
+  filter(!is.na(combination.label)) %>% 
+  
+  mutate(combination.label = factor(combination.label, levels = c("Spectinomycin", "Vanillin", "Spectinomycin + Vanillin")))
+
+
+spec.vanill.fpca <- ggplot() +
+  
+  geom_point(data=fpca_df, aes(x=fpc1, y=fpc2), color="#b3b3b3", alpha=0.25) +
+  geom_point(data=fpca.spec, aes(x=fpc1, y=fpc2, fill=combination.label), size=3, shape=21, color="black") +
+  
+  scale_fill_manual(values = c("#009E73", "#CC79A7", "#E69F00"),
+                    labels=c(latex2exp::TeX("Spectinomycin 3 $\\mu$g/mL"),
+                             latex2exp::TeX("Vanillin 200 $\\mu$g/mL"),
+                             "Spectinomycin + Vanillin"))+
+  
+  theme_bw() +
+  theme(legend.position = "bottom",
+        text=element_text(size=10),
+         axis.ticks.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.text.y = element_blank()) +
+  
+  labs(x="FPC-1",
+       y="FPC-2",
+       fill = "Treatment")
+spec.vanill.fpca
+#spec.vanill.umap.raster <- ggrastr::rasterise(spec.vanill.umap)
+```
+
+
+## Amoxi + Vanillin
+
+```{r amoxi.vanillin}
+
+curve.labels <- dgobj.ecbw.logged@metadata %>% 
+  filter(#combination.id == "Amoxicillin.1:NoDurg.NA" |
+          (combination.id == "Control.NA:Amoxicillin.1" & query %in% c("Control.rep.1", "Control.rep.2", "Control.rep.9")) |
+           
+           combination.id == "Vanillin.1:NoDurg.NA" | 
+           (combination.id == "Control.NA:Vanillin.1" & query == "Control.rep.1") | 
+           
+           
+         combination.id == "Vanillin.1:Amoxicillin.1" |
+           combination.id == "Amoxicillin.1:Vanillin.1") %>% 
+  
+  mutate(combination.label = case_when(combination.id %in% c("Amoxicillin.1:NoDurg.NA", "Control.NA:Amoxicillin.1") ~ "Amoxicillin",
+                               combination.id %in% c("Vanillin.1:NoDurg.NA", "Control.NA:Vanillin.1") ~ "Vanillin",
+                               combination.id %in% c("Vanillin.1:Amoxicillin.1", "Amoxicillin.1:Vanillin.1") ~ "Amoxicillin + Vanillin")) %>% 
+  
+  select(curve_id, combination.label)
+
+
+umap.spec <- dgobj.ecbw.logged@umap_coord %>% 
+  left_join(curve.labels, by="curve_id") %>% 
+  filter(!is.na(combination.label)) %>% 
+  
+  mutate(combination.label = factor(combination.label, levels = c("Amoxicillin", "Vanillin", "Amoxicillin + Vanillin")))
+
+amoxi.vanill.umap <- ggplot() +
+  
+  geom_point(data=dgobj.ecbw.logged@umap_coord, aes(x=V1, y=V2), color="#b3b3b3", alpha=0.25) +
+  geom_point(data=umap.spec, aes(x=V1, y=V2, fill=combination.label), size=3, shape=21, color="black") +
+  
+  scale_fill_manual(values = c("#009E73", "#CC79A7", "#E69F00"),
+                    labels=c(latex2exp::TeX("Amoxicillin 2 $\\mu$g/mL"),
+                             latex2exp::TeX("Vanillin 200 $\\mu$g/mL"),
+                             "Amoxicillin + Vanillin")) +
+  
+  theme_bw() +
+  theme(legend.position = "bottom",
+        text = element_text(size=10),
+         axis.ticks.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.text.y = element_blank()) +
+  
+  labs(x="UMAP 1",
+       y="UMAP 2",
+       fill = "Treatment")
+
+
+###
+fpca.spec <- fpca_df %>% 
+  left_join(curve.labels, by="curve_id") %>% 
+  filter(!is.na(combination.label)) %>% 
+  
+  mutate(combination.label = factor(combination.label, levels = c("Amoxicillin", "Vanillin", "Amoxicillin + Vanillin")))
+
+
+amoxi.vanill.fpca <- ggplot() +
+  
+  geom_point(data=fpca_df, aes(x=fpc1, y=fpc2), color="#b3b3b3", alpha=0.25) +
+  geom_point(data=fpca.spec, aes(x=fpc1, y=fpc2, fill=combination.label), size=3, shape=21, color="black") +
+  
+  scale_fill_manual(values = c("#009E73", "#CC79A7", "#E69F00"),
+                    labels=c(latex2exp::TeX("Amoxicillin 2 $\\mu$g/mL"),
+                             latex2exp::TeX("Vanillin 200 $\\mu$g/mL"),
+                             "Amoxicillin + Vanillin")) +
+  
+  theme_bw() +
+  theme(legend.position = "bottom",
+        text=element_text(size=10),
+         axis.ticks.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.text.y = element_blank()) +
+  
+  labs(x="FPC-1",
+       y="FPC-2",
+       fill = "Treatment")
+
+amoxi.vanill.fpca
+```
+  
+## Caffeine + Amoxi
+
+
+```{r amoxi.caff}
+
+curve.labels <- dgobj.ecbw.logged@metadata %>% 
+  filter(#combination.id == "Amoxicillin.1:NoDurg.NA" |
+          (combination.id == "Control.NA:Amoxicillin.1" & query %in% c("Control.rep.1", "Control.rep.2", "Control.rep.9")) |
+           
+           #combination.id == "Caffeine.1:NoDurg.NA" | 
+           (combination.id == "Control.NA:Caffeine.1" & query == "Control.rep.1") | 
+            (combination.id == "Control.NA:Caffeine.1" & query == "Control.rep.2") |
+           
+           
+         combination.id == "Caffeine.1:Amoxicillin.1" |
+           combination.id == "Amoxicillin.1:Caffeine.1") %>% 
+  
+  mutate(combination.label = case_when(combination.id %in% c("Amoxicillin.1:NoDurg.NA", "Control.NA:Amoxicillin.1") ~ "Amoxicillin",
+                               combination.id %in% c("Caffeine.1:NoDurg.NA", "Control.NA:Caffeine.1") ~ "Caffeine",
+                               combination.id %in% c("Caffeine.1:Amoxicillin.1", "Amoxicillin.1:Caffeine.1") ~ "Amoxicillin + Caffeine")) %>% 
+  
+  select(curve_id, combination.label)
+
+
+umap.spec <- dgobj.ecbw.logged@umap_coord %>% 
+  left_join(curve.labels, by="curve_id") %>% 
+  filter(!is.na(combination.label)) %>% 
+  
+  mutate(combination.label = factor(combination.label, levels = c("Amoxicillin", "Caffeine", "Amoxicillin + Caffeine")))
+
+amoxi.caff.umap <- ggplot() +
+  
+  geom_point(data=dgobj.ecbw.logged@umap_coord, aes(x=V1, y=V2), color="#b3b3b3", alpha=0.25) +
+  geom_point(data=umap.spec, aes(x=V1, y=V2, fill=combination.label), size=3, shape=21, color="black") +
+  
+  scale_fill_manual(values = c("#009E73", "#CC79A7", "#E69F00"),
+                    labels=c(latex2exp::TeX("Amoxicillin 2 $\\mu$g/mL"),
+                             latex2exp::TeX("Caffeine 200 $\\mu$g/mL"),
+                             "Amoxicillin + Caffeine"))+
+  
+  theme_bw() +
+  theme(legend.position = "bottom",
+        text = element_text(size=10),
+         axis.ticks.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.text.y = element_blank()) +
+  
+  labs(x="UMAP 1",
+       y="UMAP 2",
+       fill = "Treatment")
+
+
+###
+fpca.spec <- fpca_df %>% 
+  left_join(curve.labels, by="curve_id") %>% 
+  filter(!is.na(combination.label)) %>% 
+  
+  mutate(combination.label = factor(combination.label, levels = c("Amoxicillin", "Caffeine", "Amoxicillin + Caffeine")))
+
+
+amoxi.caff.fpca <- ggplot() +
+  
+  geom_point(data=fpca_df, aes(x=fpc1, y=fpc2), color="#b3b3b3", alpha=0.25) +
+  geom_point(data=fpca.spec, aes(x=fpc1, y=fpc2, fill=combination.label), size=3, shape=21, color="black") +
+  
+  scale_fill_manual(values = c("#009E73", "#CC79A7", "#E69F00"),
+                    labels=c(latex2exp::TeX("Amoxicillin 2 $\\mu$g/mL"),
+                             latex2exp::TeX("Caffeine 200 $\\mu$g/mL"),
+                             "Amoxicillin + Caffeine"))+
+  
+  theme_bw() +
+  theme(legend.position = "bottom",
+        text=element_text(size=10),
+         axis.ticks.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.text.y = element_blank()) +
+  
+  labs(x="FPC-1",
+       y="FPC-2",
+       fill = "Treatment")
+
+amoxi.caff.fpca
+```
+  
+## Growth comparison. 
+ 
+Update metadata 
+```{r gr.metadata}
+dgobj.ecbw.logged@metadata <- dgobj.ecbw.logged@metadata %>% 
+  mutate(combination.label = case_when(combination.id %in% c("Control.NA:Spectinomycin.2") & query %in% c("Control.rep.1", "Control.rep.2", "Control.rep.9","Control.rep.10", "Control.rep.11") ~ "Spectinomycin",
+                                       combination.id %in% c("Control.NA:Amoxicillin.1") & query %in% c("Control.rep.1", "Control.rep.2", "Control.rep.9","Control.rep.10", "Control.rep.11")  ~ "Amoxicillin",
+                                       
+                                       combination.id %in% c("Caffeine.1:NoDurg.NA", "Control.NA:Caffeine.1") ~ "Caffeine",
+                                       combination.id %in% c("Caffeine.1:Amoxicillin.1", "Amoxicillin.1:Caffeine.1") ~ "Amoxicillin + Caffeine",
+                                       
+                                       combination.id %in% c("Vanillin.1:NoDurg.NA", "Control.NA:Vanillin.1") ~ "Vanillin",
+                                       combination.id %in% c("Vanillin.1:Amoxicillin.1", "Amoxicillin.1:Vanillin.1") ~ "Amoxicillin + Vanillin",
+                                       
+                                       combination.id %in% c("Vanillin.1:Spectinomycin.2", "Spectinomycin.2:Vanillin.1") ~ "Spectinomycin + Vanillin",
+                                       
+                                       TRUE ~ "Other"))
+```
+
+
+
+```{r gc.spec.van}
+
+gc.spec.vanill <- growth_comparison(dgobj.ecbw.logged, 
+                                    comparison_info = c("combination.label", "Spectinomycin + Vanillin", "Spectinomycin"),
+                                    downsample_every_n_timepoints = 2,
+                                    save_gp_data = TRUE,
+                                    permutation_test = TRUE,
+                                    n_permutations = 1000)
+
+growth_comparison_result(gc.spec.vanill)
+
+gc.spec.vanill.p <- plot_growth_comparison(gc.spec.vanill)
+
+gc.spec.vanill.p <- gc.spec.vanill.p$alternative +
+  
+  
+  scale_color_manual(values = c("#009E73", "#E69F00")) +
+  
+  theme_bw() +
+  theme(plot.title = element_blank(),
+        text = element_text(size=10),
+        legend.position="none") +
+  
+  labs(x="Time (h)",
+       y = "log (OD)",
+       subtitle = latex2exp::TeX(paste("P-$value_{emp}$:", round(growth_comparison_result(gc.spec.vanill)$empirical_p.value, 3))),
+       color="Treatment")
+gc.spec.vanill.p
+```
+
+```{r gc.amoxi.van}
+
+
+gc.amoxi.vanill <- growth_comparison(dgobj.ecbw.logged, 
+                                    comparison_info = c("combination.label", "Amoxicillin + Vanillin", "Amoxicillin"),
+                                    downsample_every_n_timepoints = 2,
+                                    save_gp_data = TRUE,
+                                    permutation_test = TRUE,
+                                    n_permutations = 1000)
+
+gc.amoxi.vanill.p <- plot_growth_comparison(gc.amoxi.vanill)
+
+gc.amoxi.vanill.p <- gc.amoxi.vanill.p$alternative +
+  
+  scale_color_manual(values = c("#009E73", "#E69F00"))+
+  
+  theme_bw() +
+  theme(plot.title = element_blank(),
+        text = element_text(size=10),
+        legend.position="none") +
+  
+  labs(x="Time (h)",
+       y = "log (OD)",
+       subtitle = latex2exp::TeX(paste("P-$value_{emp}$:", round(growth_comparison_result(gc.amoxi.vanill)$empirical_p.value, 3))),
+       color="Treatment")
+gc.amoxi.vanill.p
+```
+
+
+```{r gc.amoxi.caff}
+
+
+gc.amoxi.caff <- growth_comparison(dgobj.ecbw.logged, 
+                                    comparison_info = c("combination.label", "Amoxicillin + Caffeine", "Amoxicillin"),
+                                    downsample_every_n_timepoints = 2,
+                                    save_gp_data = TRUE,
+                                    permutation_test = TRUE,
+                                    n_permutations = 1000)
+
+gc.amoxi.caff.p <- plot_growth_comparison(gc.amoxi.caff)
+
+gc.amoxi.caff.p <- gc.amoxi.caff.p$alternative +
+  
+   scale_color_manual(values = c("#009E73", "#E69F00"))+
+  
+  theme_bw() +
+  theme(plot.title = element_blank(),
+        text = element_text(size=10),
+        legend.position="none") +
+  
+  labs(x="Time (h)",
+       y = "log (OD)",
+       subtitle = latex2exp::TeX(paste("P-$value_{emp}$:", round(growth_comparison_result(gc.amoxi.caff)$empirical_p.value, 3))),
+       color="Treatment",
+       legend.position="none")
+gc.amoxi.caff.p
+```
+
+
+
+## Files written
+
+These files have been written to the target directory, ```r paste0("data/", params$name)```:
+
+```{r list-files-target}
+projthis::proj_dir_info(path_target())
+```

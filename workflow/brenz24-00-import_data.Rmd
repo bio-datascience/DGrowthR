@@ -1,0 +1,71 @@
+---
+title: "brenz24-00-import_data"
+date: "Compiled at `r format(Sys.time(), '%Y-%m-%d %H:%M:%S', tz = 'UTC')` UTC"
+output: github_document
+params:
+  name: "brenz24-00-import_data" # change if you rename file
+---
+
+```{r here, message=FALSE}
+here::i_am(paste0(params$name, ".Rmd"), uuid = "58da8ff6-9fb2-46a3-a33b-89c52f328351")
+```
+
+The purpose of this document is ...
+
+```{r packages}
+library("tidyverse")
+library("DGrowthR")
+```
+
+```{r directories}
+# create or *empty* the target directory, used to write this file's data: 
+projthis::proj_create_dir_target(params$name, clean = TRUE)
+
+# function to get path to target directory: path_target("sample.csv")
+path_target <- projthis::proj_path_target(params$name)
+
+# function to get path to previous data: path_source("00-import", "sample.csv")
+path_source <- projthis::proj_path_source(params$name)
+```
+
+## Read metadata
+
+First we can read and write the metadata data from the brenzinger 2024 study.
+
+
+```{r read.all.data}
+file.copy(from = "../Source_Data/Brenzinger_2024/Database.txt", path_target("Database.txt"))
+file.copy(from = "../Source_Data/Brenzinger_2024/Map.txt", path_target("Map.txt"))
+
+```
+
+
+## Read the OD data. 
+  
+```{r read.od.data}
+
+dir.create(path_target("od_data"))
+
+input_dir <- "../Source_Data/Brenzinger_2024/od_data/"
+od_files <- list.files(input_dir)
+
+file.copy(file.path(input_dir, od_files), file.path(path_target("od_data"), od_files))
+
+```
+
+## Files written
+
+These files have been written to the target directory, ```r paste0("data/", params$name)```:
+
+```{r list-files-target}
+projthis::proj_dir_info(path_target())
+```
+
+## Session Info
+
+```{r, session.info}
+
+sessionInfo()
+
+```
+

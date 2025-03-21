@@ -1,0 +1,155 @@
+---
+title: "brenz24-01-preprocess_data"
+date: "Compiled at `r format(Sys.time(), '%Y-%m-%d %H:%M:%S', tz = 'UTC')` UTC"
+output: github_document
+params:
+  name: "brenz24-01-preprocess_data" # change if you rename file
+---
+
+```{r here, message=FALSE}
+here::i_am(paste0(params$name, ".Rmd"), uuid = "fa90ac82-1d2c-4061-8665-de79490e0832")
+```
+
+The purpose of this document is ...
+
+```{r packages}
+library("tidyverse")
+library("DGrowthR")
+```
+
+```{r directories}
+# create or *empty* the target directory, used to write this file's data: 
+projthis::proj_create_dir_target(params$name, clean = TRUE)
+
+# function to get path to target directory: path_target("sample.csv")
+path_target <- projthis::proj_path_target(params$name)
+
+# function to get path to previous data: path_source("00-import", "sample.csv")
+path_source <- projthis::proj_path_source(params$name)
+```
+
+## Prepare OD data
+
+Prepare a common time vector for analysis and read all data from plates
+
+```{r read.multiple.brenzinger2024}
+
+# Create common time vector
+common_time_vector <- c(0, 2, seq(from=2.739, by=0.739, length.out=18))
+ 
+# Read all OD data
+brenzinger_data <- read_multiple_plates(path_target = path_source("brenz24-00-import_data/od_data"),
+                                        time_vector = common_time_vector)
+
+
+brenzinger_od <- brenzinger_data[["od_data"]]
+
+```
+
+The metadata contains all of the information relevant to the experimental setup. The information contained here can be quite arbitrary and suit the needs of the researcher. For example, it can contain information about the conditions under which each growth curve was measured, replicate number, batch number, etc. Importantly, there must be a column named **curve_id**, that contains the names of all of the growth curves present in the data frame with the optical density information. 
+  
+In our case, we will use the information about genotype, compound and concentration provided by the original study. 
+
+```{r brenzinger.metadata.info}
+
+# Information about each plate
+
+database.df <- read_tsv(path_source("brenz24-00-import_data", "Database.txt"), 
+                        show_col_types = FALSE) %>% 
+  separate(Strain, into = c("genotype", NA)) %>% 
+  select(file_id, genotype, Rep_Nr) %>% 
+  mutate(plate_name = tools::file_path_sans_ext(file_id))
+
+# Information about each well
+mapper.df <- read_tsv(path_source("brenz24-00-import_data", "Map.txt"),
+                       show_col_types = FALSE) %>% 
+  rename("well" = "Well")
+
+
+# Add this information to the metadata data frame
+brenzinger_metadata <- brenzinger_data[["metadata"]] %>% 
+  left_join(database.df, by="plate_name") %>% 
+  left_join(mapper.df, by="well") %>% 
+  unite("genotype_well", c(genotype, well), sep="_", remove=FALSE)
+
+brenzinger_metadata %>% 
+  head()
+
+
+```
+
+
+## Prepare DGrowthR object
+Once we are satisfied with our growth data and metadata data frames, we can instantiate a `DgrowthR()` object with the `DgrowthRFromData()` function.
+  
+```{r instantiate.dgobj}
+
+# Instantiate a DGrowthR object
+dgobj <- DGrowthRFromData(od_data = brenzinger_od,
+                          metadata = brenzinger_metadata)
+```
+We now have a DGrowthR object. This is the heart of our package. All functions require a `DGrowthR` object as input. For example, we can quickly visually inspect our data using the `plot_growth_curves()` function.  
+ 
+ 
+```{r plot.all.raw.curves}
+
+plot_growth_curves(dgobj)
+
+```
+  
+We can inspect our growth curves using variables of the metadata with the `facet` and `color` parameters. 
+  
+```{r plot.raw.facets}
+
+plot_growth_curves(dgobj, facet="plate_name", color="genotype")
+
+```
+  
+  
+## Pre-process. 
+  
+```{r pre.process}
+
+
+dgobj.logged <-  preprocess_data(dgobj)
+
+dgobj.linear <- preprocess_data(dgobj, log_transform = FALSE)
+
+```
+
+
+
+```{r log.curves}
+plot_growth_curves(dgobj.logged, facet="plate_name", color="genotype")
+```
+
+
+```{r linear.curves}
+plot_growth_curves(dgobj.linear, facet="plate_name", color="genotype")
+```
+  
+## Write Objects
+
+```{r write.objects}
+
+saveRDS(dgobj, path_target("dgobj_raw.rds"))
+saveRDS(dgobj.linear, path_target("dgobj_linear.rds"))
+saveRDS(dgobj.logged, path_target("dgobj_logged.rds"))
+
+```
+## Files written
+
+These files have been written to the target directory, ```r paste0("data/", params$name)```:
+
+```{r list-files-target}
+projthis::proj_dir_info(path_target())
+```
+
+
+## Session Info
+
+```{r, session.info}
+
+sessionInfo()
+
+```

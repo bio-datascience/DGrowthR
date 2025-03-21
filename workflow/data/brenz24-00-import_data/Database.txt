@@ -1,0 +1,8 @@
+Plate_Nr	Strain	Promoter	Detection	Rep_Nr	Pipetting_batch	Dilution_batch	Date	file_id
+P01	wt_1	none	OD	1	1	1	07/08/2021	wt_1_OD.txt
+P02	wt_2	none	OD	2	1	1	07/08/2021	wt_2_OD.txt
+P03	wt_3	none	OD	3	1	1	07/08/2021	wt_3_OD.txt
+P04	dCBASS_1	none	OD	1	1	1	07/08/2021	dCBASS_1_OD.txt
+P05	dCBASS_2	none	OD	2	1	1	07/08/2021	dCBASS_2_OD.txt
+P06	dCBASS_3	none	OD	3	1	1	07/08/2021	dCBASS_3_OD.txt
+P07	

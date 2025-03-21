@@ -1,0 +1,199 @@
+---
+title: "broch18-00-import_data"
+date: "Compiled at `r format(Sys.time(), '%Y-%m-%d %H:%M:%S', tz = 'UTC')` UTC"
+output: github_document
+params:
+  name: "broch18-00-import_data" # change if you rename file
+---
+
+```{r here, message=FALSE}
+here::i_am(paste0(params$name, ".Rmd"), uuid = "c1cbddf4-dfaa-4c20-bc79-297c65de4d98")
+```
+
+The purpose of this document is ...
+
+```{r packages}
+library("tidyverse")
+```
+
+```{r directories}
+# create or *empty* the target directory, used to write this file's data: 
+projthis::proj_create_dir_target(params$name, clean = TRUE)
+
+# function to get path to target directory: path_target("sample.csv")
+path_target <- projthis::proj_path_target(params$name)
+
+# function to get path to previous data: path_source("00-import", "sample.csv")
+path_source <- projthis::proj_path_source(params$name)
+```
+
+
+```{r read.all.ecoli.data}
+ecoli.data <- read.csv("../Source_Data/Brochado_2018/Ecoli.csv")
+
+```
+
+
+```{r process.bw}
+ecoli_BW <- ecoli.data %>% filter(Strain == "Ecoli_BW")
+ecoli_BW <- select(ecoli_BW, !contains("A22"))
+
+# Pivot longer
+ecoli_BW <- ecoli_BW %>%
+  # Match query and colnames format
+  mutate(Query = gsub(" ", ".", Query)) %>% 
+  
+  pivot_longer(
+    cols = -c(Strain, Query, Time_h),
+    names_to = "treatment",
+    values_to = "od"
+  )
+
+# Prepare OD
+ecoli_BW_od <- ecoli_BW %>% 
+  unite("curve_id", c(Query, treatment), sep=":") %>% 
+  select(-Strain) %>% 
+  arrange(curve_id, Time_h) %>% 
+  
+  group_by(curve_id) %>% 
+  mutate(timepoint = seq(from=0, by=0.6, length.out=n()), # Measurements (on average) are done every 
+         timepoint_n = 1:n())
+
+# Prepare metadata
+ecoli_BW_metadata <- ecoli_BW %>% 
+  select(Query, treatment) %>% 
+  distinct() %>% 
+  
+  mutate(query_chem = str_extract(Query, "(.*?)\\.\\d*\\.rep\\.\\d+", group=1),
+         query_chem = if_else(is.na(query_chem), str_extract(Query, "(.*?)\\.rep\\.\\d+", group=1), query_chem),
+         
+         query_conc = str_extract(Query, ".*?\\.(\\d*)\\.rep\\.\\d+", group=1),
+         query_rep = str_extract(Query, ".*?\\.\\d*\\.rep\\.(\\d+)", group=1),
+         
+         treatment_chem = str_extract(treatment, "(.*?)\\.\\d*\\.rep\\.\\d+", group=1),
+         treatment_chem = if_else(is.na(treatment_chem), str_extract(treatment, "(.*?)\\.rep\\.\\d+", group=1), treatment_chem),
+         
+         treatment_conc = str_extract(treatment, ".*?\\.(\\d*)\\.rep\\.\\d+", group=1),
+         treatment_rep = str_extract(treatment, ".*?\\.\\d*\\.rep\\.(\\d+)", group=1)) %>% 
+  
+  rename(query = Query) %>% 
+  arrange(query, treatment) %>% 
+  
+  unite("curve_id", c(query, treatment), sep=":", remove = FALSE)
+
+
+# Metadata timepoints
+tps_by_cid <- ecoli_BW_od %>% 
+  group_by(curve_id) %>% 
+  summarise(n_tps = n())
+
+# Update metadata
+ecoli_BW_metadata <- ecoli_BW_metadata %>% 
+  left_join(tps_by_cid, by="curve_id") %>% 
+  
+  unite("query.combo", c(query_chem, query_conc), sep=".", remove=FALSE) %>% 
+  unite("treatment.combo", c(treatment_chem, treatment_conc), sep=".", remove=FALSE) %>% 
+  
+  unite("combination.id", c(query.combo, treatment.combo), sep = ":", remove=FALSE)
+
+
+  
+
+
+```
+
+
+```{r process.iai}
+ecoli_iAi1 <- ecoli.data %>% filter(Strain == "Ecoli_iAi1")
+ecoli_iAi1 <- select(ecoli_iAi1, !contains("A22"))
+
+# Pivot longer
+ecoli_iAi1 <- ecoli_iAi1 %>%
+  # Match query and colnames format
+  mutate(Query = gsub(" ", ".", Query)) %>% 
+  
+  pivot_longer(
+    cols = -c(Strain, Query, Time_h),
+    names_to = "treatment",
+    values_to = "od"
+  )
+
+# Prepare OD
+ecoli_iAi1_od <- ecoli_iAi1 %>% 
+  unite("curve_id", c(Query, treatment), sep=":") %>% 
+  select(-Strain) %>% 
+  arrange(curve_id, Time_h) %>% 
+  
+  group_by(curve_id) %>% 
+  mutate(timepoint = seq(from=0, by=0.6, length.out=n()), # Measurements (on average) are done every 
+         timepoint_n = 1:n())
+
+# Prepare metadata
+ecoli_iAi1_metadata <- ecoli_iAi1 %>% 
+  select(Query, treatment) %>% 
+  distinct() %>% 
+  
+ mutate(query_chem = str_extract(Query, "(.*?)\\.\\d*\\.rep\\.\\d+", group=1),
+         query_chem = if_else(is.na(query_chem), str_extract(Query, "(.*?)\\.rep\\.\\d+", group=1), query_chem),
+         
+         query_conc = str_extract(Query, ".*?\\.(\\d*)\\.rep\\.\\d+", group=1),
+         query_rep = str_extract(Query, ".*?\\.\\d*\\.rep\\.(\\d+)", group=1),
+         
+         treatment_chem = str_extract(treatment, "(.*?)\\.\\d*\\.rep\\.\\d+", group=1),
+         treatment_chem = if_else(is.na(treatment_chem), str_extract(treatment, "(.*?)\\.rep\\.\\d+", group=1), treatment_chem),
+         
+         treatment_conc = str_extract(treatment, ".*?\\.(\\d*)\\.rep\\.\\d+", group=1),
+         treatment_rep = str_extract(treatment, ".*?\\.\\d*\\.rep\\.(\\d+)", group=1)) %>% 
+  
+  rename(query = Query) %>% 
+  arrange(query, treatment) %>% 
+  
+  unite("curve_id", c(query, treatment), sep=":", remove = FALSE)
+
+
+# Metadata timepoints
+tps_by_cid <- ecoli_iAi1_od %>% 
+  group_by(curve_id) %>% 
+  summarise(n_tps = n())
+
+# Update metadata
+ecoli_iAi1_metadata <- ecoli_iAi1_metadata %>% 
+  left_join(tps_by_cid, by="curve_id") %>% 
+  
+  unite("query.combo", c(query_chem, query_conc), sep=".", remove=FALSE) %>% 
+  unite("treatment.combo", c(treatment_chem, treatment_conc), sep=".", remove=FALSE) %>% 
+  
+  unite("combination.id", c(query.combo, treatment.combo), sep = ":", remove=FALSE)
+  
+
+
+  
+
+
+```
+  
+## Write files
+
+```{r write.files}
+write_tsv(ecoli_BW_od, path_target("ecoli_od_BW.tsv.gz"))
+write_tsv(ecoli_BW_metadata, path_target("ecoli_metadata_BW.tsv.gz"))
+
+write_tsv(ecoli_iAi1_od, path_target("ecoli_od_iAi.tsv.gz"))
+write_tsv(ecoli_iAi1_metadata, path_target("ecoli_metadata_iAi.tsv.gz"))
+```
+
+
+## Files written
+
+These files have been written to the target directory, ```r paste0("data/", params$name)```:
+
+```{r list-files-target}
+projthis::proj_dir_info(path_target())
+```
+
+## Session Info
+
+```{r}
+sessionInfo()
+```
+

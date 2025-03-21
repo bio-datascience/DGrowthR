@@ -1,0 +1,405 @@
+---
+title: "brenz24-03-growth_analysis"
+date: "Compiled at `r format(Sys.time(), '%Y-%m-%d %H:%M:%S', tz = 'UTC')` UTC"
+output: github_document
+params:
+  name: "brenz24-03-growth_analysis" # change if you rename file
+---
+
+```{r here, message=FALSE}
+here::i_am(paste0(params$name, ".Rmd"), uuid = "3d5f015f-5bf7-42d2-991b-3568bbd18592")
+```
+
+The purpose of this document is ...
+
+```{r packages}
+library("tidyverse")
+library("DGrowthR")
+```
+
+```{r directories}
+# create or *empty* the target directory, used to write this file's data: 
+projthis::proj_create_dir_target(params$name, clean = TRUE)
+
+# function to get path to target directory: path_target("sample.csv")
+path_target <- projthis::proj_path_target(params$name)
+
+# function to get path to previous data: path_source("00-import", "sample.csv")
+path_source <- projthis::proj_path_source(params$name)
+```
+
+## Read pre-processed DGrowthR objects
+
+```{r read.objects}
+dg.logged <- readRDS(path_source("brenz24-01-preprocess_data", "dgobj_logged.rds"))
+
+```
+
+## Low-dimensional representation. 
+ 
+```{r estimate.lowdim}
+
+# FPCA
+dg.logged <- estimate_fpca(dg.logged)
+
+# UMAP
+set.seed(123)
+dg.logged <- estimate_umap(dg.logged)
+
+```
+
+
+```{r plot.fpca}
+
+plot_fpca(dg.logged) +
+  labs(title = "Logged")
+
+``` 
+  
+
+```{r plot.umap}
+
+plot_umap(dg.logged) +
+  labs(title = "Logged")
+
+```
+
+## Clustering. 
+  
+```{r clustering}
+
+dg.logged <- clustering(dg.logged, k=0.015)
+
+```
+  
+  
+```{r logged.cluster.viz}
+plot_fpca(dg.logged, color="cluster_assignment") +
+  labs(title = "Logged")
+
+plot_umap(dg.logged, color="cluster_assignment") +
+  labs(title = "Logged")
+
+plot_growth_curves(dg.logged, color = "cluster_assignment", facet="cluster_assignment")
+
+```
+
+
+## Growth parameters. 
+
+Estimate growth parameters for each genotype-compound-concentration combination
+
+
+  
+```{r estimate.growth.parms}
+
+
+dg.logged.gparams <- estimate_growth_parameters(dg.logged, 
+                                        model_covariate = "genotype_well",
+                                        save_gp_data = TRUE,
+                                        n_cores=4)
+
+```
+  
+
+
+
+```{r cluster.assignment.mv}
+treatment.cluster <- dg.logged@metadata %>% 
+  left_join(dg.logged@cluster_assignment, by="curve_id") %>% 
+  
+  group_by(genotype_well) %>% 
+  count(cluster) %>% 
+  filter(n == max(n)) %>% 
+  ungroup() %>% 
+  
+  distinct(genotype_well, .keep_all = TRUE) %>% 
+  select(genotype_well, cluster)
+```
+
+
+
+```{r plot.gparams}
+
+dg.logged.gparams@growth_parameters %>% 
+  rename("genotype_well" = "gpfit_id") %>% 
+  
+  left_join(treatment.cluster, by="genotype_well") %>% 
+  filter(!is.na(AUC) & !is.na(max_growth_rate)) %>% 
+  mutate(normalized_max_growth_rate = (max_growth_rate - min(max_growth_rate)) / (max(max_growth_rate) - min(max_growth_rate)),
+         normalized_AUC = (AUC - min(AUC)) / (max(AUC) - min(AUC))) %>% 
+  
+  
+  ggplot(aes(x=normalized_AUC, y=normalized_max_growth_rate, color=cluster)) +
+  geom_point() +
+  theme_bw()
+
+```
+
+  
+## Multiple comparisons dCBASS vs WT
+
+
+```{r drug.metadata}
+drug.metadata <- dg.logged.gparams@metadata %>% 
+  select(well, Drug, ConcMock) %>% 
+  distinct() %>% 
+  
+  unite("drug_conc", c(Drug, ConcMock), sep="-")
+
+```
+
+
+ 
+Multiple growth testing. 
+
+```{r read.growth.comparisons}
+
+# Results
+dg.results.p1 <- readRDS("permutation_results/brenzinger_500p.rds")
+#dg.results.p2 <- readRDS("tmp_permutations/brenzinger_1000p.rds")
+
+
+# Read first 500 permutation
+dg.permutations.p1 <- readRDS("permutation_results/brenzinger_dgresults.rds")
+
+# Read second 500 permutations
+dg.permutations.p2 <- readRDS("permutation_results/brenzinger_dgresults_1000p.rds")
+
+# Join permutations
+dg.permutations <- dg.permutations.p1 %>% 
+  left_join(dg.permutations.p2, by="comparison")
+
+# Summary stats for permutations
+perm.sumstats.p1 <- dg.permutations.p1 %>% 
+  pivot_longer(cols = -comparison, names_to = "nPerm", values_to = "BF_value") %>% 
+  
+  group_by(comparison) %>%
+  summarise(median_BF = median(BF_value),
+            mean_BF = mean(BF_value))
+
+dg.results.p1 <- dg.results.p1 %>% 
+  left_join(perm.sumstats.p1, by="comparison")
+```
+
+
+```{r gamma.approximations}
+# Make sure everything is in the same order
+dg.joined <- dg.permutations %>% 
+  left_join(dg.results.p1 %>% select(comparison, likelihood_ratio), by="comparison") 
+
+# Calculate the gamma approximation
+BF_obs <- dg.joined$likelihood_ratio
+BF_perm <- dg.joined %>% 
+  select(-c(comparison, likelihood_ratio)) %>%
+  as.matrix()
+
+papprox_gamma <- permAprox::permaprox(
+    alternative = "twoSided",
+    nullValue = "median",
+    tPerm = BF_perm,
+    tObs = BF_obs,
+    method = "gamma",
+    fitThresh = 0.2,
+    gofTestGamma = FALSE,
+    includeObs = FALSE,
+    multAdj = "BH",
+    cores = 6
+  )
+
+dg.permutations <- dg.permutations %>% 
+  mutate("gamma_pval" = papprox_gamma$p,
+         
+         "emp_pval" = papprox_gamma$pEmp)
+```
+
+
+
+
+```{r}
+dg.results.gpval <- dg.results.p1 %>%
+  select(comparison, AUC.FoldChange, likelihood_ratio, median_BF, mean_BF) %>% 
+  
+  left_join(dg.permutations %>% select(comparison, emp_pval, gamma_pval), by="comparison") %>% 
+  filter(likelihood_ratio > median_BF) %>%
+  mutate(logAUC.FC = log2(AUC.FoldChange),
+         gamma_adj_pval = p.adjust(gamma_pval, method="BH"),
+         emp_adj_pval = p.adjust(emp_pval, method="BH"))
+
+dg.results.gpval %>% 
+  ggplot(aes(x=gamma_pval)) +
+  geom_histogram(binwidth = 0.01)
+```
+
+```{r}
+diff.growers <- dg.results.gpval %>% 
+  filter(gamma_adj_pval <= 0.1,
+         logAUC.FC > 0 | logAUC.FC <= -0.25) %>% 
+  
+  mutate(well = str_extract(comparison, "genotype_well: dCBASS_(.*?) v.s. wt_.*?", group = 1)) %>% 
+  left_join(drug.metadata, by="well") %>% 
+  
+  select(comparison, drug_conc, logAUC.FC, emp_pval, emp_adj_pval, gamma_pval, gamma_adj_pval) %>% 
+  arrange(desc(logAUC.FC))
+  
+diff.growers
+```
+
+
+```{r volcano.plot}
+ggplot(dg.results.gpval, aes(y=-log10(gamma_adj_pval), x=logAUC.FC, fill=logAUC.FC)) + 
+  geom_point(alpha=0.85, shape=21, color="black") +  # The alpha parameter controls the transparency of the points
+  
+  
+  scale_fill_gradient2(low = "blue", # Here we tell ggplot to use a diverging color scale",
+                        mid = "#f7f7f7",
+                        high = "red") +
+  
+  #geom_text_repel(data = diff.growers, aes(label=drug_conc), 
+  #                max.overlaps = Inf, size=2.75, min.segment.length = 0, color="black", 
+  #                box.padding = 0.7, point.padding = 0.2, fontface="plain") +
+  
+  geom_vline(xintercept = 0, color="black", linetype="longdash") +
+  geom_vline(xintercept = 0.25, color="black", linetype="longdash") +
+  geom_vline(xintercept = -0.25, color="black", linetype="longdash") +
+  
+  geom_hline(yintercept = -log10(0.05), color="black", linetype="longdash") +
+  theme_bw()
+  
+```
+
+
+
+## Comparing the effect of dCBASS to wild-type
+
+
+
+
+Comparing the AUC. 
+```{r}
+library(ggrepel)
+```
+
+
+```{r compare.auc}
+# Gather relevant data
+auc.comparison.df <- dg.logged.gparams@growth_parameters %>% 
+  select(gpfit_id, AUC) %>% 
+  separate(gpfit_id, into=c("genotype", "well")) %>% 
+  
+  pivot_wider(id_cols = well, names_from = genotype, values_from = AUC) %>% 
+  mutate(auc.diff = dCBASS - wt) %>% 
+  
+  left_join(drug.metadata, by="well")
+
+
+
+# Gather top hits
+top.auc.diff <- auc.comparison.df %>% 
+  slice_max(order_by = auc.diff, n=4)
+
+
+# Plot
+ggplot(auc.comparison.df, aes(x=wt, y=dCBASS, fill=auc.diff)) +
+  
+  geom_abline() +
+  geom_point(shape=21, color="black") +
+  
+   scale_fill_gradient2(low = "#1065ab",
+                        mid = "#f9f9f9",
+                        high = "#b31529",
+                        midpoint = 0) +
+  
+  
+  geom_text_repel(data = top.auc.diff, aes(label=drug_conc), 
+                  max.overlaps = Inf, size=3, min.segment.length = 0, color="black", box.padding = 0.7, point.padding = 0.2, fontface="plain") +
+  
+  theme_bw() +
+  labs(x="Wild-type AUC",
+       y=latex2exp::TeX("$\\Delta$CBASS\\ AUC"),
+       fill="Diff. AUC")
+
+
+
+```
+
+
+```{r growth.comparison.amoxi}
+
+gc.amoxi <- growth_comparison(dg.logged, 
+                              comparison_info = c("genotype_well", "dCBASS_A11" ,"wt_A11"),
+                              save_gp_data = TRUE,
+                              permutation_test = FALSE)
+
+
+gc.amoxi.plots <- plot_growth_comparison(gc.amoxi)
+gc.amoxi.plots$alternative
+gc.amoxi@growth_comparison$result
+```
+  
+
+
+```{r}
+gc.sulfa <- growth_comparison(dg.logged, 
+                              comparison_info = c("genotype_well", "dCBASS_O1" ,"wt_O1"),
+                              save_gp_data = TRUE,
+                              permutation_test = FALSE)
+
+
+gc.sulfa.plots <- plot_growth_comparison(gc.sulfa)
+gc.sulfa@growth_comparison$result
+gc.sulfa.plots$alternative
+```
+
+
+```{r compare.deathrate}
+# Gather relevant data
+dr.comparison.df <- dg.logged.gparams@growth_parameters %>% 
+  
+  mutate(max_death_rate = if_else(is.na(max_death_rate), 0, max_death_rate)) %>% 
+  select(gpfit_id, max_death_rate) %>% 
+  separate(gpfit_id, into=c("genotype", "well")) %>% 
+  
+  pivot_wider(id_cols = well, names_from = genotype, values_from = max_death_rate) %>% 
+  mutate(dr.diff = dCBASS - wt) %>% 
+  
+  left_join(drug.metadata, by="well")
+
+
+
+# Gather top hits
+top.dr.diff <- dr.comparison.df %>% 
+  slice_max(order_by = abs(dr.diff), n=3)
+
+
+# Plot
+ggplot(dr.comparison.df, aes(x=wt, y=dCBASS, fill=dr.diff)) +
+  
+  geom_abline() +
+  geom_point(shape=21, color="black") +
+  
+   scale_fill_gradient2(low = "#1065ab",
+                        mid = "#f9f9f9",
+                        high = "#b31529",
+                        midpoint = 0) +
+  
+  
+  geom_text_repel(data = top.dr.diff, aes(label=drug_conc), 
+                  max.overlaps = Inf, size=3, min.segment.length = 0, color="black", box.padding = 0.7, point.padding = 0.2, fontface="plain") +
+  
+  theme_bw() +
+  labs(x="Wild-type Death rate",
+       y=latex2exp::TeX("$\\Delta$CBASS\\ Death\\ rate"),
+       fill="Diff. Death rate")
+
+
+
+```
+
+## Files written
+
+These files have been written to the target directory, ```r paste0("data/", params$name)```:
+
+```{r list-files-target}
+projthis::proj_dir_info(path_target())
+```

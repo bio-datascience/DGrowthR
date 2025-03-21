@@ -1,0 +1,21 @@
+---
+title: ""
+date: "Compiled at `r format(Sys.time(), '%Y-%m-%d %H:%M:%S', tz = 'UTC')` UTC"
+output: github_document
+---
+
+```{r here-directories, message=FALSE}
+here::i_am("README.Rmd", uuid = "5632dfe0-7503-407e-8fff-9a27ed3d4645")
+
+# function to get path to previous data: path_source("99-publish", "sample.csv")
+path_source <- projthis::proj_path_source("README")
+```
+
+In this workflow, ...
+
+```{r packages}
+library("conflicted")
+```
+
+
+
