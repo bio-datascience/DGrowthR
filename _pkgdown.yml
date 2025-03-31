@@ -5,12 +5,12 @@ template:
 
 navbar:
   structure:
-    left: [intro, references]
-    right: [search, biods, github, lightswitch]
+    left: [intro, reference, biods]
+    right: [search, github, lightswitch]
   components:
     biods:
-      text: "Bio Data Science"
+      text: "BioDS"
       href: https://bio-datascience.github.io/
       target: "_blank"
       aria-label: "Bio Data Science"
-      icon: fa-flask
+      icon: fa-arrow-up-right-from-square

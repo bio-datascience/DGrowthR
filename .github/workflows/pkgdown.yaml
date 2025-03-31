@@ -2,7 +2,7 @@
 # Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
 on:
   push:
-    branches: [main, master, feat-pkgdown]  # Add your test branch name here
+    branches: [main]  # Add your test branch name here
   pull_request:
   release:
     types: [published]
