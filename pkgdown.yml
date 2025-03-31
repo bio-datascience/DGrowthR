@@ -3,7 +3,7 @@ pkgdown: 2.1.1
 pkgdown_sha: ~
 articles:
   DGrowthR: DGrowthR.html
-last_built: 2025-03-31T18:06Z
+last_built: 2025-03-31T18:46Z
 urls:
-  reference: http://dgrowthr.github.io/reference
-  article: http://dgrowthr.github.io/articles
+  reference: https://bio-datascience.github.io/DGrowthR/reference
+  article: https://bio-datascience.github.io/DGrowthR/articles
