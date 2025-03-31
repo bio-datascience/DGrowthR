@@ -1,8 +1,6 @@
-DGrowthR: A comprehensive workflow for growth curve analysis
-================
-Compiled on 2025-03-21 18:53:56
-
 ![](assets/Logo-DGrowthR.png)
+
+# DGrowthR: A comprehensive workflow for growth curve analysis
 
 This repository hosts the `DGrowthR` R package and the workflow for the
 detailed analysis of publicly available datasets mentioned in our
@@ -12,7 +10,8 @@ growth using Gaussian Process Regression.
 
 ![](assets/dgrowthr_panel.png)
 
-**For more details, check out our [pre-print](https://www.biorxiv.org/content/10.1101/2025.03.25.645164v2):**
+> [!TIP]
+> For more details, check out our pre-print [Statistical end-to-end analysis of large-scale microbial growth data with DGrowthR](https://www.biorxiv.org/content/10.1101/2025.03.25.645164v2) on bioRxiv.
 
 ## Installation Guide
 
@@ -23,8 +22,7 @@ Then you can execute the following commands in R.
 1.  Ensure that you have the `devtools` package installed. If not, you
     can install it using the following command
 
-``` r
-
+```r
 # Install devtools
 install.packages("devtools")
 
@@ -34,8 +32,7 @@ library(devtools)
 
 2.  Use the `install` function to install the `DGrowthR` package:
 
-``` r
-
+```r
 install()
 ```
 

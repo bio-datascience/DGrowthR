@@ -9,7 +9,8 @@ Authors@R: c(
     person("Roberto", "Olayo Alarcon", email = "roberto.olayo@lmu.de", 
            role = "aut")
     )
-URL: https://bio-datascience.github.io/DGrowthR/
+URL: https://bio-datascience.github.io/DGrowthR/, https://github.com/bio-datascience/DGrowthR/
+BugReports: https://github.com/bio-datascience/DGrowthR/issues
 Version: 1.0
 License: GPL-3 + file LICENSE
 Encoding: UTF-8
