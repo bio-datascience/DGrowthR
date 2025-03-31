@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Bacterial Growth Curve Analysis • DGrowthR</title>
-<script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<script src="lightswitch.js"></script><script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
@@ -18,7 +18,7 @@
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top " aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="index.html">DGrowthR</a>
 
@@ -32,12 +32,21 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
 <li class="nav-item"><a class="nav-link" href="articles/DGrowthR.html">Get started</a></li>
-<li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="search.json">
 </form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://bio-datascience.github.io/" target="_blank" aria-label="Bio Data Science"><span class="fa fa-flask"></span> Bio Data Science</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/bio-datascience/DGrowthR/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
+<li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="dark"><span class="fa fa-moon"></span> Dark</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="auto"><span class="fa fa-adjust"></span> Auto</button></li>
+  </ul>
+</li>
       </ul>
 </div>
 
@@ -45,14 +54,15 @@
   </div>
 </nav><div class="container template-home">
 <div class="row">
-  <main id="main" class="col-md-9"><div class="section level1">
+  <main id="main" class="col-md-9"><p><img src="assets/Logo-DGrowthR.png"></p>
+<div class="section level1">
 <div class="page-header"><h1 id="dgrowthr-a-comprehensive-workflow-for-growth-curve-analysis">DGrowthR: A comprehensive workflow for growth curve analysis<a class="anchor" aria-label="anchor" href="#dgrowthr-a-comprehensive-workflow-for-growth-curve-analysis"></a>
 </h1></div>
-<p>Compiled on 2025-03-21 18:53:56</p>
-<p><img src="assets/Logo-DGrowthR.png"></p>
 <p>This repository hosts the <code>DGrowthR</code> R package and the workflow for the detailed analysis of publicly available datasets mentioned in our pre-print. This workflow is designed to showcase the application of the <code>DGrowthR</code> package to model complex, non-linear dynamics of bacterial growth using Gaussian Process Regression.</p>
 <p><img src="assets/dgrowthr_panel.png"></p>
-<p><strong>For more details, check out our <a href="https://www.biorxiv.org/content/10.1101/2025.03.25.645164v2" class="external-link">pre-print</a>:</strong></p>
+<blockquote>
+<p>[!TIP] For more details, check out our pre-print <a href="https://www.biorxiv.org/content/10.1101/2025.03.25.645164v2" class="external-link">Statistical end-to-end analysis of large-scale microbial growth data with DGrowthR</a> on bioRxiv.</p>
+</blockquote>
 <div class="section level2">
 <h2 id="installation-guide">Installation Guide<a class="anchor" aria-label="anchor" href="#installation-guide"></a>
 </h2>
@@ -61,8 +71,7 @@
 <li>Ensure that you have the <code>devtools</code> package installed. If not, you can install it using the following command</li>
 </ol>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
-<span><span class="co"># Install devtools</span></span>
+<code class="sourceCode R"><span><span class="co"># Install devtools</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Load the library</span></span>
@@ -71,8 +80,7 @@
 <li>Use the <code>install</code> function to install the <code>DGrowthR</code> package:</li>
 </ol>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
-<span><span class="fu">install</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">install</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="how-to-use-dgrowthr">How to use <code>DGrowthR</code>.<a class="anchor" aria-label="anchor" href="#how-to-use-dgrowthr"></a>
@@ -86,7 +94,16 @@
 <p>All steps are in our <a href="https://github.com/bio-datascience/DGrowthR/tree/main/workflow" class="external-link">workflow</a> folder</p>
 </div>
 </div>
-  </main><aside class="col-md-3"><div class="license">
+
+  </main><aside class="col-md-3"><div class="links">
+<h2 data-toc-skip>Links</h2>
+<ul class="list-unstyled">
+<li><a href="https://github.com/bio-datascience/DGrowthR/" class="external-link">Browse source code</a></li>
+<li><a href="https://github.com/bio-datascience/DGrowthR/issues" class="external-link">Report a bug</a></li>
+</ul>
+</div>
+
+<div class="license">
 <h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
 <li><a href="LICENSE.html">Full license</a></li>
