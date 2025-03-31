@@ -4,6 +4,7 @@ Description: A Comprehensive Toolset for Modelling of Bacterial Growth Curves vi
 Author: Medina Feldl <mail@medinabajramovic.de> [aut, cre], 
       Roberto Olayo Alarcon <roberto.olayo@lmu.de> [aut]
 Maintainer: Medina Feldl <mail@medinabajramovic.de>
+URL: https://dgrowthr.github.io/
 Version: 1.0
 License: GPL-3 + file LICENSE
 Encoding: UTF-8
@@ -11,6 +12,7 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
 Imports:
     methods,
+    tidyverse,
     tidyselect,
     magrittr,
     fdapace,

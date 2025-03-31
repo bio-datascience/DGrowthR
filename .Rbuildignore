@@ -3,3 +3,7 @@
 ^LICENSE\.md$
 ^workflow$
 ^assets$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^\.github$
