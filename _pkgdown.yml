@@ -1,0 +1,16 @@
+url: https://bio-datascience.github.io/DGrowthR/
+template:
+  bootstrap: 5
+  light-switch: true
+
+navbar:
+  structure:
+    left: [intro, reference, biods]
+    right: [search, github, lightswitch]
+  components:
+    biods:
+      text: "BioDS"
+      href: https://bio-datascience.github.io/
+      target: "_blank"
+      aria-label: "Bio Data Science"
+      icon: fa-arrow-up-right-from-square
