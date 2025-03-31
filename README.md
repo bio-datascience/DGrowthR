@@ -12,6 +12,8 @@ growth using Gaussian Process Regression.
 
 ![](assets/dgrowthr_panel.png)
 
+**For more details, check out our [pre-print](https://www.biorxiv.org/content/10.1101/2025.03.25.645164v2):**
+
 ## Installation Guide
 
 To install the `DGrowthR` R package directly from this repository. First
