@@ -12,7 +12,8 @@ growth using Gaussian Process Regression.
 
 > [!TIP]
 > For more details, check out our pre-print [Statistical end-to-end analysis of large-scale microbial growth data with DGrowthR](https://www.biorxiv.org/content/10.1101/2025.03.25.645164v2) on bioRxiv.
-> DGrowthR is also available as a [standalone Desktop-App] for Windows and Apple (https://zenodo.org/records/15118187).
+> 
+> DGrowthR is also available as a **standalone Desktop-App** for Windows and Apple (https://zenodo.org/records/15118187).
 
 ## Installation Guide
 
