@@ -54,3 +54,7 @@ and [Brenzinger
 All steps are in our
 [workflow](https://github.com/bio-datascience/DGrowthR/tree/main/workflow)
 folder
+
+
+# DGrowthR Overview
+![](assets/DGrowthR_workflow_august.png)
