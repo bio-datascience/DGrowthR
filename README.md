@@ -57,4 +57,4 @@ folder
 
 
 # DGrowthR Overview
-![](assets/DGrowthR_workflow_august.png)
+![](assets/workflow_april.png)
