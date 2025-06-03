@@ -1,40 +1,47 @@
 Package: DGrowthR
 Title: Bacterial Growth Curve Analysis
-Description: A Comprehensive Toolset for Modelling of Bacterial Growth Curves via Gaussian Processes, Differential Testing and Empirical p-value Adjustment.
-Author: Medina Feldl <mail@medinabajramovic.de> [aut, cre], 
-      Roberto Olayo Alarcon <roberto.olayo@lmu.de> [aut]
-Maintainer: Medina Feldl <mail@medinabajramovic.de>
+Description: A Comprehensive Toolset for Modelling of Bacterial Growth 
+    Curves via Gaussian Processes, Differential Testing and Empirical 
+    p-value Adjustment.
+Authors@R: c(
+    person("Medina", "Feldl", email = "mail@medinabajramovic.de", 
+           role = c("aut", "cre")),
+    person("Roberto", "Olayo Alarcon", email = "roberto.olayo@lmu.de", 
+           role = "aut")
+    )
+URL: https://bio-datascience.github.io/DGrowthR/, https://github.com/bio-datascience/DGrowthR/
+BugReports: https://github.com/bio-datascience/DGrowthR/issues
 Version: 1.0
 License: GPL-3 + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
 Imports:
-    methods,
-    tidyselect,
-    magrittr,
-    fdapace,
+    dbscan,
     dplyr,
+    doSNOW,
+    fdapace,
+    foreach,
+    ggplot2,
+    jsonlite,
+    laGP,
+    magrittr,
+    mclust,
+    methods,
+    mvtnorm,
+    pracma,
+    purrr,
+    readr,
+    snow,
+    stats,
+    stringr,
     tibble,
     tidyr,
-    pracma,
-    stringr,
-    laGP,
-    ggplot2,
+    tidyselect,
+    tidyverse,
     tools,
-    foreach,
-    snow,
-    doSNOW,
-    jsonlite,
-    methods,
     utils,
-    dbscan,
-    stats,
-    uwot,
-    mclust,
-    mvtnorm,
-    readr,
-    purrr
+    uwot
 Depends: 
     R (>= 2.10)
 LazyData: true
