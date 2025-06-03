@@ -306,5 +306,5 @@ setMethod(
                                         downsample_every_n_timepoints = downsample_every_n_timepoints) %>%
     mutate(contrast_val = 1)
 
-  return(bind_rows(od_data.reference, od_data.alternative))
+  return(bind_rows(od_data.reference, od_data.alternative) %>% filter(!is.na(od)))
 }
