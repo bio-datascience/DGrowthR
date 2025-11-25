@@ -188,3 +188,51 @@ multiple_comparisons <- function(object,
 
 }
 
+
+#------------------------------------------------------------------------------------------------------------------
+#' @title Gamma approximated pvalues
+#'
+#' @description A wrapper around the `compute_p_values` function from the permAprox package using a gamma control distribution.
+#'
+#' @param result_list A list object that is the result of the `multiple_comparisons` function with `save_perm_stats == TRUE`.
+#' @param alternative A string indicating what the alternative hypothesis should be. Default is `greater`.
+#' @param nullValue Numeric or character. Specifies the value around which the null distribution is centered. If set to "mean" or "median", the per-row mean or median of perm_stats is used instead. This allows testing against a null hypothesis other than zero or centering based on the empirical distribution.
+#' @param fit_thresh Numeric. Threshold on empirical p-values below which parametric fitting is applied. Default: 0.2 (parametric approximation if the empirical p-value is smaller than 0.2).
+#' @return Provides a data.frame with the updated the results.
+#'
+#' @name gamma_pvalues
+#' @rdname gamma_pvalues
+#' @export
+gamma_pvalues <- function(result_list, alternative="greater", nullValue=0, fit_thresh=0.2){
+
+  # Gather results
+  dg.results <- result_list$result_df
+  dg.permutations <- result_list$permutation_df
+  # Make sure everything is in the same order
+  dg.joined <- dg.permutations %>%
+    left_join(dg.results %>% select(comparison, likelihood_ratio), by="comparison")
+  # Calculate the gamma approximation
+  BF_obs <- dg.joined$likelihood_ratio
+  BF_perm <- dg.joined %>%
+    select(-c(comparison, likelihood_ratio)) %>%
+    as.matrix() %>%
+    t() %>%
+    unname()
+
+  # Gamma control object
+  gamma_ctrl <- permApprox::make_gamma_ctrl(gof_test = "none", include_obs = FALSE)
+  # Adjust pvalues
+  res_gamma <- permApprox::perm_approx(obs_stats = BF_obs,
+                                       perm_stats = BF_perm,
+                                       alternative = alternative,
+                                       null_center = nullValue,
+                                       approx_thresh = fit_thresh,
+                                       method = "gamma",
+                                       gamma_ctrl = gamma_ctrl,
+                                       adjust_method = "BH")
+  # Add adjusted results
+  dg.results$pvalue_gamma <- res_gamma$p_unadjusted
+  dg.results$pvalue_gamma.adj <- res_gamma$p_values
+  return(dg.results)
+
+}

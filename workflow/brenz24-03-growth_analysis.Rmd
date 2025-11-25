@@ -156,9 +156,7 @@ Multiple growth testing.
 ```{r read.growth.comparisons}
 
 # Results
-dg.results.p1 <- readRDS("permutation_results/brenzinger_500p.rds")
-#dg.results.p2 <- readRDS("tmp_permutations/brenzinger_1000p.rds")
-
+dg.results <- readRDS("permutation_results/brenzinger_500p.rds")
 
 # Read first 500 permutation
 dg.permutations.p1 <- readRDS("permutation_results/brenzinger_dgresults.rds")
@@ -170,84 +168,50 @@ dg.permutations.p2 <- readRDS("permutation_results/brenzinger_dgresults_1000p.rd
 dg.permutations <- dg.permutations.p1 %>% 
   left_join(dg.permutations.p2, by="comparison")
 
-# Summary stats for permutations
-perm.sumstats.p1 <- dg.permutations.p1 %>% 
-  pivot_longer(cols = -comparison, names_to = "nPerm", values_to = "BF_value") %>% 
+
+# Create results list
+result_list <- list("result_df" = dg.results,
+                    "permutation_df" = dg.permutations)
+
+# Gamma approximated pvalues
+dg.results.brenz <- gamma_pvalues(result_list, nullValue = "median", alternative = "two_sided") %>% 
   
-  group_by(comparison) %>%
-  summarise(median_BF = median(BF_value),
-            mean_BF = mean(BF_value))
+  mutate(log2AUC.FC = log2(AUC.FoldChange))
 
-dg.results.p1 <- dg.results.p1 %>% 
-  left_join(perm.sumstats.p1, by="comparison")
+```
+
+## Pvalue distribution
+```{r}
+dg.results.brenz %>% 
+  
+  ggplot(aes(x=pvalue_gamma)) +
+  geom_histogram(binwidth = 0.05) +
+  
+  theme_bw()
 ```
 
 
-```{r gamma.approximations}
-# Make sure everything is in the same order
-dg.joined <- dg.permutations %>% 
-  left_join(dg.results.p1 %>% select(comparison, likelihood_ratio), by="comparison") 
-
-# Calculate the gamma approximation
-BF_obs <- dg.joined$likelihood_ratio
-BF_perm <- dg.joined %>% 
-  select(-c(comparison, likelihood_ratio)) %>%
-  as.matrix()
-
-papprox_gamma <- permAprox::permaprox(
-    alternative = "twoSided",
-    nullValue = "median",
-    tPerm = BF_perm,
-    tObs = BF_obs,
-    method = "gamma",
-    fitThresh = 0.2,
-    gofTestGamma = FALSE,
-    includeObs = FALSE,
-    multAdj = "BH",
-    cores = 6
-  )
-
-dg.permutations <- dg.permutations %>% 
-  mutate("gamma_pval" = papprox_gamma$p,
-         
-         "emp_pval" = papprox_gamma$pEmp)
-```
-
-
-
+## Number differential treatmeants
 
 ```{r}
-dg.results.gpval <- dg.results.p1 %>%
-  select(comparison, AUC.FoldChange, likelihood_ratio, median_BF, mean_BF) %>% 
-  
-  left_join(dg.permutations %>% select(comparison, emp_pval, gamma_pval), by="comparison") %>% 
-  filter(likelihood_ratio > median_BF) %>%
-  mutate(logAUC.FC = log2(AUC.FoldChange),
-         gamma_adj_pval = p.adjust(gamma_pval, method="BH"),
-         emp_adj_pval = p.adjust(emp_pval, method="BH"))
-
-dg.results.gpval %>% 
-  ggplot(aes(x=gamma_pval)) +
-  geom_histogram(binwidth = 0.01)
-```
-
-```{r}
-diff.growers <- dg.results.gpval %>% 
-  filter(gamma_adj_pval <= 0.1,
-         logAUC.FC > 0 | logAUC.FC <= -0.25) %>% 
+diff.growers <- dg.results.brenz %>% 
+  filter(pvalue_gamma.adj <= 0.1) %>% 
   
   mutate(well = str_extract(comparison, "genotype_well: dCBASS_(.*?) v.s. wt_.*?", group = 1)) %>% 
   left_join(drug.metadata, by="well") %>% 
   
-  select(comparison, drug_conc, logAUC.FC, emp_pval, emp_adj_pval, gamma_pval, gamma_adj_pval) %>% 
-  arrange(desc(logAUC.FC))
+  select(comparison, drug_conc, log2AUC.FC, empirical_p.value, pvalue.adjust, pvalue_gamma, pvalue_gamma.adj) %>% 
+  arrange(desc(log2AUC.FC))
   
-diff.growers
+diff.growers %>% 
+  knitr::kable()
 ```
+
+## Volcano plot
 
 
 ```{r volcano.plot}
-ggplot(dg.results.gpval, aes(y=-log10(gamma_adj_pval), x=logAUC.FC, fill=logAUC.FC)) + 
+ggplot(dg.results.brenz, aes(y=-log10(pvalue_gamma.adj), x=log2AUC.FC, fill=log2AUC.FC)) + 
   geom_point(alpha=0.85, shape=21, color="black") +  # The alpha parameter controls the transparency of the points
   
   
@@ -263,10 +227,11 @@ ggplot(dg.results.gpval, aes(y=-log10(gamma_adj_pval), x=logAUC.FC, fill=logAUC.
   geom_vline(xintercept = 0.25, color="black", linetype="longdash") +
   geom_vline(xintercept = -0.25, color="black", linetype="longdash") +
   
-  geom_hline(yintercept = -log10(0.05), color="black", linetype="longdash") +
+  geom_hline(yintercept = -log10(0.1), color="black", linetype="longdash") +
   theme_bw()
   
 ```
+
 
 
 
@@ -369,7 +334,7 @@ dr.comparison.df <- dg.logged.gparams@growth_parameters %>%
 
 # Gather top hits
 top.dr.diff <- dr.comparison.df %>% 
-  slice_max(order_by = abs(dr.diff), n=3)
+  slice_max(order_by = abs(dr.diff), n=4)
 
 
 # Plot

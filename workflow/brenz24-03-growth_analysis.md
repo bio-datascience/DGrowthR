@@ -1,6 +1,6 @@
 brenz24-03-growth_analysis
 ================
-Compiled at 2025-03-21 17:44:38 UTC
+Compiled at 2025-11-25 15:25:55 UTC
 
 ``` r
 here::i_am(paste0(params$name, ".Rmd"), uuid = "3d5f015f-5bf7-42d2-991b-3568bbd18592")
@@ -190,9 +190,7 @@ Multiple growth testing.
 
 ``` r
 # Results
-dg.results.p1 <- readRDS("permutation_results/brenzinger_500p.rds")
-#dg.results.p2 <- readRDS("tmp_permutations/brenzinger_1000p.rds")
-
+dg.results <- readRDS("permutation_results/brenzinger_500p.rds")
 
 # Read first 500 permutation
 dg.permutations.p1 <- readRDS("permutation_results/brenzinger_dgresults.rds")
@@ -204,114 +202,137 @@ dg.permutations.p2 <- readRDS("permutation_results/brenzinger_dgresults_1000p.rd
 dg.permutations <- dg.permutations.p1 %>% 
   left_join(dg.permutations.p2, by="comparison")
 
-# Summary stats for permutations
-perm.sumstats.p1 <- dg.permutations.p1 %>% 
-  pivot_longer(cols = -comparison, names_to = "nPerm", values_to = "BF_value") %>% 
-  
-  group_by(comparison) %>%
-  summarise(median_BF = median(BF_value),
-            mean_BF = mean(BF_value))
 
-dg.results.p1 <- dg.results.p1 %>% 
-  left_join(perm.sumstats.p1, by="comparison")
+# Create results list
+result_list <- list("result_df" = dg.results,
+                    "permutation_df" = dg.permutations)
+
+# Gamma approximated pvalues
+dg.results.brenz <- gamma_pvalues(result_list, nullValue = "median", alternative = "two_sided") %>% 
+  
+  mutate(log2AUC.FC = log2(AUC.FoldChange))
 ```
 
-``` r
-# Make sure everything is in the same order
-dg.joined <- dg.permutations %>% 
-  left_join(dg.results.p1 %>% select(comparison, likelihood_ratio), by="comparison") 
+    ## Fitting Gamma (tail > 0) for 187 tests (sequential) ...
+    ## Done.
 
-# Calculate the gamma approximation
-BF_obs <- dg.joined$likelihood_ratio
-BF_perm <- dg.joined %>% 
-  select(-c(comparison, likelihood_ratio)) %>%
-  as.matrix()
-
-papprox_gamma <- permAprox::permaprox(
-    alternative = "twoSided",
-    nullValue = "median",
-    tPerm = BF_perm,
-    tObs = BF_obs,
-    method = "gamma",
-    fitThresh = 0.2,
-    gofTestGamma = FALSE,
-    includeObs = FALSE,
-    multAdj = "BH",
-    cores = 6
-  )
-
-dg.permutations <- dg.permutations %>% 
-  mutate("gamma_pval" = papprox_gamma$p,
-         
-         "emp_pval" = papprox_gamma$pEmp)
-```
+## Pvalue distribution
 
 ``` r
-dg.results.gpval <- dg.results.p1 %>%
-  select(comparison, AUC.FoldChange, likelihood_ratio, median_BF, mean_BF) %>% 
+dg.results.brenz %>% 
   
-  left_join(dg.permutations %>% select(comparison, emp_pval, gamma_pval), by="comparison") %>% 
-  filter(likelihood_ratio > median_BF) %>%
-  mutate(logAUC.FC = log2(AUC.FoldChange),
-         gamma_adj_pval = p.adjust(gamma_pval, method="BH"),
-         emp_adj_pval = p.adjust(emp_pval, method="BH"))
-
-dg.results.gpval %>% 
-  ggplot(aes(x=gamma_pval)) +
-  geom_histogram(binwidth = 0.01)
+  ggplot(aes(x=pvalue_gamma)) +
+  geom_histogram(binwidth = 0.05) +
+  
+  theme_bw()
 ```
 
 ![](brenz24-03-growth_analysis_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->
 
+## Number differential treatmeants
+
 ``` r
-diff.growers <- dg.results.gpval %>% 
-  filter(gamma_adj_pval <= 0.1,
-         logAUC.FC > 0 | logAUC.FC <= -0.25) %>% 
+diff.growers <- dg.results.brenz %>% 
+  filter(pvalue_gamma.adj <= 0.1) %>% 
   
   mutate(well = str_extract(comparison, "genotype_well: dCBASS_(.*?) v.s. wt_.*?", group = 1)) %>% 
   left_join(drug.metadata, by="well") %>% 
   
-  select(comparison, drug_conc, logAUC.FC, emp_pval, emp_adj_pval, gamma_pval, gamma_adj_pval) %>% 
-  arrange(desc(logAUC.FC))
+  select(comparison, drug_conc, log2AUC.FC, empirical_p.value, pvalue.adjust, pvalue_gamma, pvalue_gamma.adj) %>% 
+  arrange(desc(log2AUC.FC))
   
-diff.growers
+diff.growers %>% 
+  knitr::kable()
 ```
 
-    ##                               comparison         drug_conc  logAUC.FC
-    ## 1  genotype_well: dCBASS_O13 v.s. wt_O13    Trimethoprim-1  1.9229080
-    ## 2    genotype_well: dCBASS_O9 v.s. wt_O9    Tetracycline-1  1.2744487
-    ## 3    genotype_well: dCBASS_O1 v.s. wt_O1 Sulfamethoxazol-1  1.1922838
-    ## 4    genotype_well: dCBASS_O2 v.s. wt_O2 Sulfamethoxazol-2  1.0401945
-    ## 5  genotype_well: dCBASS_A11 v.s. wt_A11     Amoxicillin-1  0.7279720
-    ## 6  genotype_well: dCBASS_I16 v.s. wt_I16       Meropenem-2  0.4977306
-    ## 7    genotype_well: dCBASS_A9 v.s. wt_A9        Amikacin-1  0.4691270
-    ## 8  genotype_well: dCBASS_K13 v.s. wt_K13    Penicillin G-1  0.1730566
-    ## 9    genotype_well: dCBASS_M7 v.s. wt_M7       Quercetin-1  0.1525752
-    ## 10 genotype_well: dCBASS_M21 v.s. wt_M21   Spectinomycin-1  0.1362287
-    ## 11 genotype_well: dCBASS_A10 v.s. wt_A10        Amikacin-2  0.0808624
-    ## 12 genotype_well: dCBASS_C21 v.s. wt_C21       Cerulenin-1 -0.4032353
-    ## 13 genotype_well: dCBASS_A21 v.s. wt_A21    Benzalkonium-1 -0.4937274
-    ## 14 genotype_well: dCBASS_A23 v.s. wt_A23       Berberine-1 -0.5232235
-    ## 15 genotype_well: dCBASS_C22 v.s. wt_C22       Cerulenin-2 -0.5871747
-    ##      emp_pval emp_adj_pval  gamma_pval gamma_adj_pval
-    ## 1  0.05794206    0.2049302 0.003505912     0.04706939
-    ## 2  0.08691309    0.2213988 0.016082544     0.05812691
-    ## 3  0.04695305    0.2049302 0.001471134     0.03954465
-    ## 4  0.05094905    0.2049302 0.002771301     0.04706939
-    ## 5  0.04395604    0.2049302 0.006275857     0.04731159
-    ## 6  0.04895105    0.2049302 0.018217468     0.06291823
-    ## 7  0.05394605    0.2049302 0.006505736     0.04731159
-    ## 8  0.06093906    0.2055678 0.001619899     0.03954465
-    ## 9  0.11288711    0.2213988 0.034751869     0.08792223
-    ## 10 0.05794206    0.2049302 0.004383061     0.04706939
-    ## 11 0.05394605    0.2049302 0.004591170     0.04706939
-    ## 12 0.05394605    0.2049302 0.016718649     0.05957490
-    ## 13 0.05494505    0.2049302 0.018283343     0.06291823
-    ## 14 0.04595405    0.2049302 0.001229460     0.03954465
-    ## 15 0.03996004    0.2049302 0.012689635     0.05324310
+    ## Warning: 'xfun::attr()' is deprecated.
+    ## Use 'xfun::attr2()' instead.
+    ## See help("Deprecated")
+    ## Warning: 'xfun::attr()' is deprecated.
+    ## Use 'xfun::attr2()' instead.
+    ## See help("Deprecated")
+
+| comparison                            | drug_conc                   | log2AUC.FC | empirical_p.value | pvalue.adjust | pvalue_gamma | pvalue_gamma.adj |
+|:--------------------------------------|:----------------------------|-----------:|------------------:|--------------:|-------------:|-----------------:|
+| genotype_well: dCBASS_O13 v.s. wt_O13 | Trimethoprim-1              |  1.9229080 |         0.1157685 |     0.6214598 |    0.0035059 |        0.0714413 |
+| genotype_well: dCBASS_O9 v.s. wt_O9   | Tetracycline-1              |  1.2744487 |         0.1736527 |     0.6251327 |    0.0160825 |        0.0882242 |
+| genotype_well: dCBASS_O1 v.s. wt_O1   | Sulfamethoxazol-1           |  1.1922838 |         0.0938124 |     0.6214598 |    0.0014711 |        0.0600203 |
+| genotype_well: dCBASS_O2 v.s. wt_O2   | Sulfamethoxazol-2           |  1.0401945 |         0.1017964 |     0.6214598 |    0.0027713 |        0.0714413 |
+| genotype_well: dCBASS_A11 v.s. wt_A11 | Amoxicillin-1               |  0.7279720 |         0.0878244 |     0.6214598 |    0.0062759 |        0.0718089 |
+| genotype_well: dCBASS_I16 v.s. wt_I16 | Meropenem-2                 |  0.4977306 |         0.0978044 |     0.6214598 |    0.0182175 |        0.0954964 |
+| genotype_well: dCBASS_A9 v.s. wt_A9   | Amikacin-1                  |  0.4691270 |         0.1077844 |     0.6214598 |    0.0065057 |        0.0718089 |
+| genotype_well: dCBASS_K13 v.s. wt_K13 | Penicillin G-1              |  0.1730566 |         0.1217565 |     0.6233932 |    0.0016199 |        0.0600203 |
+| genotype_well: dCBASS_M21 v.s. wt_M21 | Spectinomycin-1             |  0.1362287 |         0.1157685 |     0.6214598 |    0.0043831 |        0.0714413 |
+| genotype_well: dCBASS_A10 v.s. wt_A10 | Amikacin-2                  |  0.0808624 |         0.1077844 |     0.6214598 |    0.0045912 |        0.0714413 |
+| genotype_well: dCBASS_D1 v.s. wt_D1   | Bleomycin-3                 | -0.0618513 |         0.0758483 |     0.6214598 |    0.0055219 |        0.0718089 |
+| genotype_well: dCBASS_E22 v.s. wt_E22 | Dopamine-2                  | -0.0680313 |         0.2095808 |     0.6251327 |    0.0157220 |        0.0874966 |
+| genotype_well: dCBASS_B9 v.s. wt_B9   | Amikacin-3                  | -0.0694083 |         0.0978044 |     0.6214598 |    0.0150466 |        0.0860700 |
+| genotype_well: dCBASS_O6 v.s. wt_O6   | Taurocholic acid-2          | -0.0697008 |         0.1057884 |     0.6214598 |    0.0074576 |        0.0734960 |
+| genotype_well: dCBASS_D18 v.s. wt_D18 | Cefotaxime-4                | -0.0705044 |         0.1197605 |     0.6214598 |    0.0089596 |        0.0747932 |
+| genotype_well: dCBASS_B5 v.s. wt_B5   | Acetylsalicylic acid-3      | -0.0719092 |         0.0938124 |     0.6214598 |    0.0046656 |        0.0714413 |
+| genotype_well: dCBASS_D17 v.s. wt_D17 | Cefotaxime-3                | -0.0721796 |         0.1097804 |     0.6214598 |    0.0120489 |        0.0789375 |
+| genotype_well: dCBASS_K22 v.s. wt_K22 | Polymyxin B-2               | -0.0731284 |         0.0758483 |     0.6214598 |    0.0011400 |        0.0600203 |
+| genotype_well: dCBASS_A14 v.s. wt_A14 | Ascorbic acid (vitamin C)-2 | -0.0736956 |         0.0918164 |     0.6214598 |    0.0067005 |        0.0718089 |
+| genotype_well: dCBASS_B2 v.s. wt_B2   | 2,3-DHBA-4                  | -0.0739775 |         0.1117764 |     0.6214598 |    0.0097495 |        0.0748302 |
+| genotype_well: dCBASS_E4 v.s. wt_E4   | Ciprofloxacin-2             | -0.0768587 |         0.0838323 |     0.6214598 |    0.0118712 |        0.0789375 |
+| genotype_well: dCBASS_B6 v.s. wt_B6   | Acetylsalicylic acid-4      | -0.0807348 |         0.0978044 |     0.6214598 |    0.0053967 |        0.0718089 |
+| genotype_well: dCBASS_E15 v.s. wt_E15 | Curcumin-1                  | -0.0807373 |         0.1177645 |     0.6214598 |    0.0099456 |        0.0748302 |
+| genotype_well: dCBASS_F15 v.s. wt_F15 | Curcumin-3                  | -0.0811241 |         0.2035928 |     0.6251327 |    0.0136337 |        0.0844411 |
+| genotype_well: dCBASS_F2 v.s. wt_F2   | Cinnamaldehyde-4            | -0.0822427 |         0.1097804 |     0.6214598 |    0.0091882 |        0.0748302 |
+| genotype_well: dCBASS_I17 v.s. wt_I17 | Metformin-1                 | -0.0823540 |         0.1017964 |     0.6214598 |    0.0084720 |        0.0747932 |
+| genotype_well: dCBASS_G23 v.s. wt_G23 | Imipenem-1                  | -0.0843898 |         0.1157685 |     0.6214598 |    0.0076099 |        0.0734960 |
+| genotype_well: dCBASS_E13 v.s. wt_E13 | Colistin-1                  | -0.0846693 |         0.1037924 |     0.6214598 |    0.0081124 |        0.0747932 |
+| genotype_well: dCBASS_B17 v.s. wt_B17 | Aztreonam-3                 | -0.0854617 |         0.0958084 |     0.6214598 |    0.0120101 |        0.0789375 |
+| genotype_well: dCBASS_B11 v.s. wt_B11 | Amoxicillin-3               | -0.0877024 |         0.1037924 |     0.6214598 |    0.0121284 |        0.0789375 |
+| genotype_well: dCBASS_A4 v.s. wt_A4   | 4-aminosalicylic acid-2     | -0.0891727 |         0.1077844 |     0.6214598 |    0.0070824 |        0.0734960 |
+| genotype_well: dCBASS_P6 v.s. wt_P6   | Taurocholic acid-4          | -0.0916428 |         0.0938124 |     0.6214598 |    0.0114869 |        0.0789375 |
+| genotype_well: dCBASS_E23 v.s. wt_E23 | Doxorubicin-1               | -0.0924720 |         0.0938124 |     0.6214598 |    0.0013296 |        0.0600203 |
+| genotype_well: dCBASS_H5 v.s. wt_H5   | Erythromycin-3              | -0.0927864 |         0.1337325 |     0.6251327 |    0.0083192 |        0.0747932 |
+| genotype_well: dCBASS_G11 v.s. wt_G11 | Eugenol-1                   | -0.0934587 |         0.0878244 |     0.6214598 |    0.0184030 |        0.0954964 |
+| genotype_well: dCBASS_E12 v.s. wt_E12 | Clindamycin-2               | -0.0947952 |         0.0858283 |     0.6214598 |    0.0152173 |        0.0860700 |
+| genotype_well: dCBASS_F19 v.s. wt_F19 | Deoxycholic acid-3          | -0.0949347 |         0.1057884 |     0.6214598 |    0.0050232 |        0.0714413 |
+| genotype_well: dCBASS_A13 v.s. wt_A13 | Ascorbic acid (vitamin C)-1 | -0.0955924 |         0.1317365 |     0.6245287 |    0.0046809 |        0.0714413 |
+| genotype_well: dCBASS_B19 v.s. wt_B19 | Bacitracin-3                | -0.0962809 |         0.1197605 |     0.6214598 |    0.0101579 |        0.0748302 |
+| genotype_well: dCBASS_L20 v.s. wt_L20 | PMS-4                       | -0.0974780 |         0.1077844 |     0.6214598 |    0.0041288 |        0.0714413 |
+| genotype_well: dCBASS_I2 v.s. wt_I2   | Indole-2                    | -0.0982217 |         0.0878244 |     0.6214598 |    0.0019728 |        0.0600203 |
+| genotype_well: dCBASS_D14 v.s. wt_D14 | CCCP-4                      | -0.0982688 |         0.1057884 |     0.6214598 |    0.0017404 |        0.0600203 |
+| genotype_well: dCBASS_L11 v.s. wt_L11 | Paraquat-3                  | -0.1009424 |         0.0958084 |     0.6214598 |    0.0057195 |        0.0718089 |
+| genotype_well: dCBASS_E8 v.s. wt_E8   | Chlorhexidine-2             | -0.1012240 |         0.2115768 |     0.6251327 |    0.0152416 |        0.0860700 |
+| genotype_well: dCBASS_H11 v.s. wt_H11 | Eugenol-3                   | -0.1028785 |         0.1137725 |     0.6214598 |    0.0128373 |        0.0808117 |
+| genotype_well: dCBASS_D15 v.s. wt_D15 | Cefaclor-3                  | -0.1052838 |         0.0658683 |     0.6214598 |    0.0038590 |        0.0714413 |
+| genotype_well: dCBASS_F10 v.s. wt_F10 | Clarithromycin-4            | -0.1151279 |         0.0938124 |     0.6214598 |    0.0150004 |        0.0860700 |
+| genotype_well: dCBASS_F16 v.s. wt_F16 | Curcumin-4                  | -0.1153796 |         0.0938124 |     0.6214598 |    0.0015118 |        0.0600203 |
+| genotype_well: dCBASS_B22 v.s. wt_B22 | Benzalkonium-4              | -0.1202439 |         0.1137725 |     0.6214598 |    0.0144132 |        0.0860700 |
+| genotype_well: dCBASS_F22 v.s. wt_F22 | Dopamine-4                  | -0.1219948 |         0.1017964 |     0.6214598 |    0.0061286 |        0.0718089 |
+| genotype_well: dCBASS_P24 v.s. wt_P24 | Water-8                     | -0.1220677 |         0.1197605 |     0.6214598 |    0.0103281 |        0.0748302 |
+| genotype_well: dCBASS_G24 v.s. wt_G24 | Imipenem-2                  | -0.1234899 |         0.0978044 |     0.6214598 |    0.0020319 |        0.0600203 |
+| genotype_well: dCBASS_D22 v.s. wt_D22 | Cerulenin-4                 | -0.1238747 |         0.1177645 |     0.6214598 |    0.0101359 |        0.0748302 |
+| genotype_well: dCBASS_N16 v.s. wt_N16 | Serotonine-4                | -0.1241045 |         0.1017964 |     0.6214598 |    0.0010620 |        0.0600203 |
+| genotype_well: dCBASS_J10 v.s. wt_J10 | Mecillinam-4                | -0.1258075 |         0.0698603 |     0.6214598 |    0.0039199 |        0.0714413 |
+| genotype_well: dCBASS_G3 v.s. wt_G3   | EGCG-1                      | -0.1326629 |         0.0938124 |     0.6214598 |    0.0030255 |        0.0714413 |
+| genotype_well: dCBASS_E24 v.s. wt_E24 | Doxorubicin-2               | -0.1339959 |         0.0978044 |     0.6214598 |    0.0015456 |        0.0600203 |
+| genotype_well: dCBASS_A22 v.s. wt_A22 | Benzalkonium-2              | -0.1408148 |         0.1137725 |     0.6214598 |    0.0088328 |        0.0747932 |
+| genotype_well: dCBASS_D8 v.s. wt_D8   | Capsaicin-4                 | -0.1408722 |         0.1357285 |     0.6251327 |    0.0067321 |        0.0718089 |
+| genotype_well: dCBASS_P18 v.s. wt_P18 | Vanillic acid-4             | -0.1451690 |         0.1057884 |     0.6214598 |    0.0007942 |        0.0600203 |
+| genotype_well: dCBASS_H23 v.s. wt_H23 | Imipenem-3                  | -0.1466250 |         0.0898204 |     0.6214598 |    0.0044134 |        0.0714413 |
+| genotype_well: dCBASS_J24 v.s. wt_J24 | Moxifloxacin-4              | -0.1474766 |         0.1157685 |     0.6214598 |    0.0114568 |        0.0789375 |
+| genotype_well: dCBASS_N24 v.s. wt_N24 | Spiramycin-4                | -0.1615785 |         0.1037924 |     0.6214598 |    0.0049741 |        0.0714413 |
+| genotype_well: dCBASS_H19 v.s. wt_H19 | Hydrocortisone-3            | -0.1658468 |         0.1197605 |     0.6214598 |    0.0045173 |        0.0714413 |
+| genotype_well: dCBASS_L2 v.s. wt_L2   | Nitrofurantoin-4            | -0.1676087 |         0.1077844 |     0.6214598 |    0.0088999 |        0.0747932 |
+| genotype_well: dCBASS_H24 v.s. wt_H24 | Imipenem-4                  | -0.1733370 |         0.1017964 |     0.6214598 |    0.0147256 |        0.0860700 |
+| genotype_well: dCBASS_I24 v.s. wt_I24 | Moxifloxacin-2              | -0.1818506 |         0.1297405 |     0.6245287 |    0.0059304 |        0.0718089 |
+| genotype_well: dCBASS_C23 v.s. wt_C23 | Chloramphenicol-1           | -0.1864663 |         0.1057884 |     0.6214598 |    0.0076558 |        0.0734960 |
+| genotype_well: dCBASS_P12 v.s. wt_P12 | Thymol-4                    | -0.1919088 |         0.0898204 |     0.6214598 |    0.0013411 |        0.0600203 |
+| genotype_well: dCBASS_D24 v.s. wt_D24 | Chloramphenicol-4           | -0.2454881 |         0.1157685 |     0.6214598 |    0.0096448 |        0.0748302 |
+| genotype_well: dCBASS_C21 v.s. wt_C21 | Cerulenin-1                 | -0.4032353 |         0.1077844 |     0.6214598 |    0.0167186 |        0.0904220 |
+| genotype_well: dCBASS_A21 v.s. wt_A21 | Benzalkonium-1              | -0.4937274 |         0.1097804 |     0.6214598 |    0.0182833 |        0.0954964 |
+| genotype_well: dCBASS_A23 v.s. wt_A23 | Berberine-1                 | -0.5232235 |         0.0918164 |     0.6214598 |    0.0012295 |        0.0600203 |
+| genotype_well: dCBASS_C22 v.s. wt_C22 | Cerulenin-2                 | -0.5871747 |         0.0798403 |     0.6214598 |    0.0126896 |        0.0808117 |
+
+## Volcano plot
 
 ``` r
-ggplot(dg.results.gpval, aes(y=-log10(gamma_adj_pval), x=logAUC.FC, fill=logAUC.FC)) + 
+ggplot(dg.results.brenz, aes(y=-log10(pvalue_gamma.adj), x=log2AUC.FC, fill=log2AUC.FC)) + 
   geom_point(alpha=0.85, shape=21, color="black") +  # The alpha parameter controls the transparency of the points
   
   
@@ -327,7 +348,7 @@ ggplot(dg.results.gpval, aes(y=-log10(gamma_adj_pval), x=logAUC.FC, fill=logAUC.
   geom_vline(xintercept = 0.25, color="black", linetype="longdash") +
   geom_vline(xintercept = -0.25, color="black", linetype="longdash") +
   
-  geom_hline(yintercept = -log10(0.05), color="black", linetype="longdash") +
+  geom_hline(yintercept = -log10(0.1), color="black", linetype="longdash") +
   theme_bw()
 ```
 
@@ -461,7 +482,7 @@ dr.comparison.df <- dg.logged.gparams@growth_parameters %>%
 
 # Gather top hits
 top.dr.diff <- dr.comparison.df %>% 
-  slice_max(order_by = abs(dr.diff), n=3)
+  slice_max(order_by = abs(dr.diff), n=4)
 
 
 # Plot

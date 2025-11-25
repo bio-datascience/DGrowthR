@@ -495,7 +495,10 @@ contrast_list <- list(c("genotype_well", "dCBASS_O1" ,"wt_O1"),
                       c("genotype_well", "dCBASS_B1" ,"wt_B1"))
 
 # Returns a dataframe
-multiple_df <- multiple_comparisons(dgobj,contrast_list, permutation_test = TRUE, n_permutations = 100)
+result_list <- multiple_comparisons(dgobj,contrast_list, 
+                                    permutation_test = TRUE, 
+                                    n_permutations = 100,
+                                    save_perm_stats = TRUE) # This is important to make use of the gamma-approximated p-values
 ```
 
 
@@ -503,8 +506,16 @@ Now we can view the results in one data.frame as shown below. There is also now 
 
 
 ```{r mult.comparison.result}
-multiple_df %>% 
+result_list$result_df %>% 
   rmarkdown::paged_table()
 ```
+
+Additionally, you can obtain gamma-approximated p-values.
+
+```{r gamma.approximations}
+gamma_pvalues(result_list) %>% 
+  rmarkdown::paged_table()
+```
+
 
 That should be good to get you started!

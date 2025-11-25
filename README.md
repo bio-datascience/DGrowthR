@@ -38,6 +38,12 @@ library(devtools)
 install()
 ```
 
+Additionally, you must install the [permApprox](https://github.com/stefpeschel/permApprox) package in order to obtain gamma-approximated p-values.  
+  
+```r
+remotes::install_github("stefpeschel/permApprox")
+```
+
 ## How to use `DGrowthR`.
 
 An overview of the main functionalities of `DGrowthR` with concrete
