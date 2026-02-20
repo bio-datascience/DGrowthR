@@ -278,7 +278,7 @@ setMethod(
 #'
 #' This function computes the delta || OD|| between two vectors
 #'
-#' @param vectorA A vector with one of the
+#' @param object A DGrowthR object
 #' @param contrast_vector A 'vector' object containing three values: 1) The variable on which the contrast is made, 2) alternative condition, and 3) reference condition
 #' @param downsample_every_n_timepoints A numeric value indicating that the OD from every n timepoint should be used for GP fit. Might speed up fitting.
 #'

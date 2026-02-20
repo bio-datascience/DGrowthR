@@ -47,7 +47,7 @@ DGrowthR <- setClass(
     preprocessed = "logical",
     growth_parameters = "data.frame"
   ),
-  
+
   prototype = list(od_data = data.frame(),
                    metadata = data.frame(),
                    raw_od = data.frame(),
@@ -60,7 +60,7 @@ DGrowthR <- setClass(
                    log_od = FALSE,
                    preprocessed = FALSE,
                    growth_parameters = data.frame()),
-  
+
   validity = function(object) {
     if (!("timepoint" %in% colnames(object@od_data))) {
       return("timepoint column not found in input data")
@@ -77,10 +77,10 @@ DGrowthR <- setClass(
     if (!all(unique(object@od_data$curve_id) %in% unique(object@metadata$curve_id))) {
       return("Not all curve_id values in od_data are present in the metadata")
     }
-    
+
     return(TRUE)
   }
-  
+
 )
 
 
@@ -91,58 +91,58 @@ DGrowthR <- setClass(
 #' @param od_data A data.frame containing all of the optical density data. It should have a "Time" column with each row being a timepoint and the rest of the columns being an individual growth curve. The names of the growth curves should match those in the "curve_id" field in metadata.
 #' @param metadata Optional. A data.frame containing a "curve_id" field and all additional metadata. If none is provided, then one is created automatically containing only the wells from the curve_ids in od_data.
 #' @param verbose A logical variable indicating if DGrowthR object should be verbose.
-#' 
+#'
 #' @return A DGrowthR object with filled raw_od, od_data, and metadata slots.
 #'
 #' @name DGrowthRFromData
 #' @rdname DGrowthRFromData
 #' @export
 DGrowthRFromData <- function(od_data, metadata=NULL, verbose=TRUE){
-  
+
   # Check that a "Time" column exists in od_data
   if(!"Time" %in% colnames(od_data)){
     stop('No column called "Time" in od_data')
   }
-  
+
   # Check that there are no repeated curve_ids
   if(ncol(od_data)-1 != length(unique(colnames(od_data)))-1){
     stop("There are repeated curve identifiers. Make sure all colnames are unique.")
   }
-  
+
   # Check if metadata is provided, if not, then create a dumb metadata file
   if(is.null(metadata)){
     message("Creating metadata from od_data")
-    
+
     # Gather all of the curve_ids
     curve_ids <- colnames(od_data)[colnames(od_data) != "Time"]
     metadata <- data.frame(curve_id = curve_ids,
                            well = str_split_i(curve_ids, "_", -1))
-    
+
   }
-  
+
   # Pivot od_data
-  od_data_long <- od_data %>% 
-    mutate(timepoint_n = 1:n()) %>% 
-    pivot_longer(cols = -c(Time, timepoint_n), names_to = "curve_id", values_to = "od") %>% 
+  od_data_long <- od_data %>%
+    mutate(timepoint_n = 1:n()) %>%
+    pivot_longer(cols = -c(Time, timepoint_n), names_to = "curve_id", values_to = "od") %>%
     rename("timepoint" = "Time")
-  
-  
+
+
   # Give some summary statistics,
   message(paste("Creating a DGrowthR object..."))
   message(paste(ncol(od_data)-1, "growth curves."))
   message(paste(nrow(od_data), "timepoints."))
   message(paste(ncol(metadata)-1, "covariates (including well)."))
-  
-  
+
+
   # Create the DGrowthR object
-  object <- new("DGrowthR", 
-                od_data = od_data_long, 
+  object <- new("DGrowthR",
+                od_data = od_data_long,
                 metadata = metadata,
                 raw_od = od_data_long,
                 verbose=verbose)
-  
+
   return(object)
-  
+
 }
 
 #------------------------------------------------------------------------------------------------------------------
@@ -151,7 +151,7 @@ DGrowthRFromData <- function(od_data, metadata=NULL, verbose=TRUE){
 #'
 #' @param object An object of class "DGrowthR".
 #' @param metadata_field A character string specifying one of the fields in the metadata from which the variables will be searched in.
-#' @param field_value The value of the metadata_field that for which the relevant growth curves will be extracted. 
+#' @param field_value The value of the metadata_field that for which the relevant growth curves will be extracted.
 #' @param downsample_every_n_timepoints A numeric value indicating that the OD from every n timepoint should be used for GP fit. Might seep up fitting.
 #'
 #' @return A data.frame containing the optical density data requested.
@@ -161,42 +161,42 @@ setGeneric(name = "gather_od_data", function(object, metadata_field, field_value
 #' @rdname gather_od_data
 #' @export
 setMethod(f = "gather_od_data", signature = "DGrowthR", definition = function(object, metadata_field, field_value, downsample_every_n_timepoints=1) {
-  
+
   # Gather the od_data and metadata
   od_data <- object@od_data
   metadata <- object@metadata
-  
-  
+
+
   # If the requested field is curve_id, then just return that
   if(metadata_field == "curve_id"){
-    
+
     req.data <- od_data %>% filter(curve_id == field_value)
-    
+
   }else{
     # Gather the relevant growth curve ids
-    curve_ids_requested <- metadata %>% 
-      rename("metadata_field" = all_of(metadata_field)) %>% 
-      
-      filter(metadata_field == field_value) %>% 
-      select(curve_id) %>% 
+    curve_ids_requested <- metadata %>%
+      rename("metadata_field" = all_of(metadata_field)) %>%
+
+      filter(metadata_field == field_value) %>%
+      select(curve_id) %>%
       unlist()
-    
+
     req.data <- od_data %>% filter(curve_id %in% curve_ids_requested)
-    
+
   }
-  
+
   if (downsample_every_n_timepoints > 1) {
     timepoints_to_keep <- seq(from = min(req.data$timepoint_n), to = max(req.data$timepoint_n), by = downsample_every_n_timepoints)
     req.data <- req.data %>% filter(timepoint_n %in% timepoints_to_keep)
-    
+
   }
-  
-  
-  
+
+
+
   # Return the requested growth curves
   return(req.data)
-  
-  
+
+
 })
 
 
@@ -209,8 +209,8 @@ utils::globalVariables(c("Time", "V1", "V2", "color_covar", "color_var", "contra
                          "max_growth_rate", "object.comparison", "od", "od_alt", "od_diff", "od_null", "pseudo_od",
                          "q1", "q2", "refline_dist", "sampled_id", "second_derivative", "str_remove",
                          "str_split_i", "timepoint", "timepoint_n", "type", "value", "variable", "well",
-                         "perm_vals", "comparison", "nperm"
-))
+                         "perm_vals", "comparison", "nperm", "gpfit_converged",
+                         "likelihood_ratio", "n_growth_phases", "phase"))
 
 
 #' Accessor for the alternative slot
@@ -257,7 +257,7 @@ setMethod(f = "perm_test_result", signature = "DGrowthR", definition = function(
 #' This function retrieves the likelihood ratio test result from the growth comparison slot
 #'
 #' @param object An object from which to extract the perm_test_result slot.
-#' @return The LRT test statistic 
+#' @return The LRT test statistic
 #' @export
 setGeneric(name = "lrt_statistic", function(object) standardGeneric("lrt_statistic"))
 #' @rdname lrt_statistic
@@ -270,7 +270,7 @@ setMethod(f = "lrt_statistic", signature = "DGrowthR", definition = function(obj
 #' This function retrieves the result of a growth comparison
 #'
 #' @param object An object from which to extract the perm_test_result slot.
-#' @return The growth comparison result data.frame 
+#' @return The growth comparison result data.frame
 #' @export
 setGeneric(name = "growth_comparison_result", function(object) standardGeneric("growth_comparison_result"))
 #' @rdname growth_comparison_result

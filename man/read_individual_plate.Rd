@@ -16,7 +16,7 @@ read_individual_plate(plate_file, path_target, time_vector = c(), sep = "\\t")
 \item{sep}{The delimiter character that separates columns in plate_file.}
 }
 \value{
-A data.frame with the data from plate_file. The Time column contains the values in time_vector, and the wells are renamed to be {plate_name}_{well}.
+A data.frame with the data from plate_file. The Time column contains the values in time_vector, and the wells are renamed to be plateName_well.
 }
 \description{
 This function receives a file name that contains plate reader OD data. It returns a data.frame with the parsed data.

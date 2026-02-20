@@ -7,13 +7,11 @@
 .gather_contrast(object, contrast_vector, downsample_every_n_timepoints = 1)
 }
 \arguments{
-\item{object}{A DGrowthR object.}
+\item{object}{A DGrowthR object}
 
 \item{contrast_vector}{A 'vector' object containing three values: 1) The variable on which the contrast is made, 2) alternative condition, and 3) reference condition}
 
 \item{downsample_every_n_timepoints}{A numeric value indicating that the OD from every n timepoint should be used for GP fit. Might speed up fitting.}
-
-\item{vectorA}{A vector with one of the}
 }
 \value{
 The input object, with the appropiate OD data.

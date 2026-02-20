@@ -14,7 +14,10 @@ estimate_growth_parameters(
   od_auc_at_t = NULL,
   sample_n_curves = 100,
   save_gp_data = FALSE,
-  n_cores = 1
+  n_cores = 1,
+  detect_polyauxic = FALSE,
+  polyauxic_ratio_threshold = 0.2,
+  polyauxic_parameter_criteria = "carrying_capacity"
 )
 
 \S4method{estimate_growth_parameters}{DGrowthR}(
@@ -26,7 +29,10 @@ estimate_growth_parameters(
   od_auc_at_t = NULL,
   sample_n_curves = 100,
   save_gp_data = FALSE,
-  n_cores = 1
+  n_cores = 1,
+  detect_polyauxic = FALSE,
+  polyauxic_ratio_threshold = 0.2,
+  polyauxic_parameter_criteria = "carrying_capacity"
 )
 }
 \arguments{
@@ -49,6 +55,12 @@ than one growth curve per group.}
 \item{save_gp_data}{A logical value, indicating if the mean GP values and GP fit parameters should be saved to object.}
 
 \item{n_cores}{A numeric values indicating the number of cores the user wants to use to model curves in parallel.}
+
+\item{detect_polyauxic}{A logical value indicating if the function should attempt to detect polyauxic growth curves. This is done by looking for multiple peaks in the second derivative of the mean GP fit. If TRUE, then additional columns to the growth parameter table will be added with the relevant information.}
+
+\item{polyauxic_ratio_threshold}{A numeric value. Potential growth phases are assessed by comparing their respective carrying capacity. If the carrying capacity of a potential second phase is at least this fraction of the carrying capacity of the first phase, then the second phase is considered a true growth phase. Only relevant if detect_polyauxic is TRUE.}
+
+\item{polyauxic_parameter_criteria}{A character value. Either "growth_rate" or "carrying_capacity". Indicates which parameter should be used to assess the relevance of potential growth phases. Only relevant if detect_polyauxic is TRUE.}
 }
 \value{
 Updated DGrowthR object with updated growth_parameters and, if requested, gpfit_info slots.

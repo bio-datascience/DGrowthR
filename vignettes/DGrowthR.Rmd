@@ -30,11 +30,15 @@ This page aims to give an overview of `DGrowthR` and introduce you to the main f
 7. Multiple differential growth testing.
 
 ```{r setup, message=FALSE}
+library("DGrowthR")
 library("tidyverse")
 
-library("DGrowthR")
+# We also need the permApprox package for the permutation test in the growth comparison section
+# Here we install if it wasn't already installed
+if(!requireNamespace("permApprox", quietly = TRUE)) {
+  remotes::install_github("stefpeschel/permApprox")
+}
 ```
-
   
 ## Preparing your data for `DGrowthR`. 
   
@@ -310,11 +314,9 @@ To estimate growth parameters, we can use the `estimate_growth_parameters()` fun
 
 ```{r estimate.growth.params}
 
-dgobj.curve_modelling <- estimate_growth_parameters(dgobj)
+dgobj.curve_modelling <- estimate_growth_parameters(dgobj, save_gp_data = TRUE)
 
 ```
-
-
 
 By default, the function models and gathers growth parameters for each individual curve and saves in the `@growth_parameters` slot. We can view it here.  
   
@@ -322,6 +324,7 @@ By default, the function models and gathers growth parameters for each individua
 dgobj.curve_modelling@growth_parameters %>% 
   rmarkdown::paged_table()
 ```
+  
   
 As you can see, the **gpfit_id** field corresponds to the **curve_id**. We actually update our low-dimensional embeddings with this data now.  
 
@@ -395,6 +398,42 @@ Now we can see that our growth statistics have a mean and standard deviation.
 ```{r views.posterior.growth params, eval=FALSE}
 dgobj.genotype_well.posterior@growth_parameters %>% 
   rmarkdown::paged_table()
+```
+
+
+## Polyauxic growth. 
+  
+In many research applications, it is important to detect and characterize polyauxic growth. Polyauxic growth is a phenomenon where multiple distinct growth phases are observed in a single growth curve. This can be indicative of complex underlying biological processes, such as diauxic shifts, where an organism switches from one energy source to another, or the presence of subpopulations with different growth dynamics. 
+  
+In `DGrowthR` we can detect polyauxic growth when modelling growth curves with the `estimate_growth_parameters()` function. To do this, we can set the `detect_polyauxic` parameter to TRUE. This will trigger an additional step in the growth parameter estimation process where the function will look for multiple growth phases in the mean posterior of the GP fit. The detection of polyauxic growth is based on two criteria:  
+1. **polyauxic_ratio_threshold**: This is the minimum ratio between the maximum growth of the second growth phase and the maximum growth of the first growth phase. For example, if this is set to 0.5, the second growth phase must have a maximum growth that is at least 50% of the maximum growth of the first phase to be considered a valid polyauxic phase.  
+2. **polyauxic_parameter_criteria**: This is the growth parameter that is used to determine the maximum growth of each phase. By default, this is set to "carrying_capacity", which means that the maximum growth of each phase is determined by the carrying capacity of that phase. However, other parameters such as "growth_rate" could also be used.
+ 
+```{r detect.polyauxic.growth}
+dgobj.polyauxic <- estimate_growth_parameters(dgobj, 
+                                              model_covariate="genotype_well", # covariate in metadata to model
+                                              save_gp_data = TRUE, # Save the GP data
+                                              n_cores=3,
+                                              
+                                              # Polyauxic detection
+                                              detect_polyauxic = TRUE, # Detect polyauxic growth
+                                              polyauxic_ratio_threshold = 0.5,
+                                              polyauxic_parameter_criteria = "carrying_capacity") 
+```
+
+The results can be viewed in the `@growth_parameters` slot. The number of growth phases detected is indicated in the **n_growth_phases** field, and the maximum growth of each phase is indicated in the **max_growth_phase_1**, **max_growth_phase_2**, etc. fields. Below we can see all of the growth curves where more than one growth phase was detected and where at least 0.2 of the maximum oeverall growth.  
+
+```{r view.polyauxic.results}
+dgobj.polyauxic@growth_parameters %>% 
+  filter(n_growth_phases > 1,
+         max_growth > 0.2) %>%
+  rmarkdown::paged_table()
+```
+
+Below we plot an example curve with two growth phases. The vertical lines indicate the transition between different growth phases.
+```{r plot.polyauxic}
+plot_gp(dgobj.polyauxic, gpfit_id = "wt_A10", show_input_od=TRUE) +
+  geom_vline(xintercept = c(0, 8.037414, 14.99287))
 ```
   
    

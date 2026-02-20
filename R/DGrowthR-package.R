@@ -17,5 +17,6 @@
 #' @importFrom readr write_tsv
 #' @importFrom mvtnorm rmvt
 #' @importFrom pracma trapz
+#' @importFrom utils tail
 NULL
 
