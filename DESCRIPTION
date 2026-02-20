@@ -40,14 +40,16 @@ Imports:
     tidyselect,
     tools,
     utils,
-    uwot,
-    permApprox
+    uwot
 Depends: 
     R (>= 2.10)
 LazyData: true
 Suggests: 
     knitr,
     rmarkdown,
+    permApprox,
     testthat (>= 3.0.0)
+Remotes:
+    stefpeschel/permApprox
 Config/testthat/edition: 3
 VignetteBuilder: knitr
