@@ -6,8 +6,7 @@
 #' @param path_target The path to plate_file.
 #' @param time_vector A numeric vector that indicates the Time at which each measurement was taken.
 #' @param sep The delimiter character that separates columns in plate_file.
-
-#' @return A data.frame with the data from plate_file. The Time column contains the values in time_vector, and the wells are renamed to be {plate_name}_{well}.
+#' @return A data.frame with the data from plate_file. The Time column contains the values in time_vector, and the wells are renamed to be plateName_well.
 #'
 #' @name read_individual_plate
 #' @rdname read_individual_plate
@@ -52,7 +51,7 @@ read_individual_plate <- function(plate_file, path_target, time_vector=c(), sep=
 #' @param time_vector A numeric vector that indicates the Time at which each measurement was taken. If empty then the Time column from one of the plates is taken as reference.
 #' @param sep The delimiter character that separates columns of each file in path_target
 
-#' @return A list of two dataframes. An "od_data" dataframe with a common time column and each growth curve in a separate column named with it's "curve_id" ({plate_name}_{well}).
+#' @return A list of two dataframes. An "od_data" dataframe with a common time column and each growth curve in a separate column named with it's "curve_id" (plateName_well).
 #' Also a "metadata" dataframe indicating the well and the original plate from which each "curve_id" is gathered from.
 #'
 #' @name read_multiple_plates

@@ -13,7 +13,10 @@
   od_auc_at_t,
   sample_n_curves,
   save_gp_data,
-  n_cores
+  n_cores,
+  detect_polyauxic,
+  polyauxic_ratio_threshold,
+  polyauxic_parameter_criteria
 )
 }
 \arguments{
@@ -36,6 +39,12 @@ than one growth curve per group.}
 \item{save_gp_data}{A logical value, indicating if the mean GP values and GP fit parameters should be saved to object.}
 
 \item{n_cores}{A numeric values indicating the number of cores the user wants to use to model curves in parallel.}
+
+\item{detect_polyauxic}{A logical value indicating if the function should attempt to detect polyauxic growth curves. This is done by looking for multiple peaks in the second derivative of the mean GP fit. If TRUE, then and additional dataframe with the timepoints of the beginning and end of each phase is included. If set to TRUE, then save_gp_data must also be set to TRUE.}
+
+\item{polyauxic_ratio_threshold}{A numeric value. Potential growth phases are assessed by comparing their respective carrying capacity. If the carrying capacity of a potential second phase is at least this fraction of the carrying capacity of the first phase, then the second phase is considered a true growth phase. Only relevant if detect_polyauxic is TRUE.}
+
+\item{polyauxic_parameter_criteria}{A character value. Either "growth_rate" or "carrying_capacity". Indicates which parameter should be used to assess the relevance of potential growth phases. Only relevant if detect_polyauxic is TRUE.}
 }
 \value{
 Updated DGrowthR object

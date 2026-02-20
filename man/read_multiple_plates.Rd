@@ -14,7 +14,7 @@ read_multiple_plates(path_target, time_vector = c(), sep = "\\t")
 \item{sep}{The delimiter character that separates columns of each file in path_target}
 }
 \value{
-A list of two dataframes. An "od_data" dataframe with a common time column and each growth curve in a separate column named with it's "curve_id" ({plate_name}_{well}).
+A list of two dataframes. An "od_data" dataframe with a common time column and each growth curve in a separate column named with it's "curve_id" (plateName_well).
 Also a "metadata" dataframe indicating the well and the original plate from which each "curve_id" is gathered from.
 }
 \description{

@@ -7,11 +7,11 @@
 .fit_lagp(X, y, delete = FALSE)
 }
 \arguments{
+\item{X}{A data.frame containing the covariates used for model fitting.}
+
 \item{y}{A vector containing the values to be predicted.}
 
 \item{delete}{A logical value. If TRUE, the Gaussian process model will be deleted after fitting.}
-
-\item{X_data}{A data.frame containing the covariates used for model fitting.}
 }
 \value{
 The input object, with the Gaussian process information as a list.
