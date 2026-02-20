@@ -9,7 +9,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/bio-datascience/DGrowthR/blob/dev/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/bio-datascience/DGrowthR/blob/main/DESCRIPTION)
 
 Feldl M, Olayo Alarcon R (2026). *DGrowthR: Bacterial Growth Curve
 Analysis*. R package version 1.0,
