@@ -13,6 +13,8 @@
 <url><loc>https://bio-datascience.github.io/DGrowthR/reference/clustering.html</loc></url>
 <url><loc>https://bio-datascience.github.io/DGrowthR/reference/dot-characterize_growth.html</loc></url>
 <url><loc>https://bio-datascience.github.io/DGrowthR/reference/dot-check_flat.html</loc></url>
+<url><loc>https://bio-datascience.github.io/DGrowthR/reference/dot-detect_phases.html</loc></url>
+<url><loc>https://bio-datascience.github.io/DGrowthR/reference/dot-detect_polyauxic.html</loc></url>
 <url><loc>https://bio-datascience.github.io/DGrowthR/reference/dot-determine_auc.html</loc></url>
 <url><loc>https://bio-datascience.github.io/DGrowthR/reference/dot-determine_growth_loss.html</loc></url>
 <url><loc>https://bio-datascience.github.io/DGrowthR/reference/dot-determine_lag_phase.html</loc></url>
@@ -27,7 +29,9 @@
 <url><loc>https://bio-datascience.github.io/DGrowthR/reference/dot-fit_lagp.html</loc></url>
 <url><loc>https://bio-datascience.github.io/DGrowthR/reference/dot-gather_contrast.html</loc></url>
 <url><loc>https://bio-datascience.github.io/DGrowthR/reference/dot-get_inflection_point.html</loc></url>
+<url><loc>https://bio-datascience.github.io/DGrowthR/reference/dot-merge_phases.html</loc></url>
 <url><loc>https://bio-datascience.github.io/DGrowthR/reference/dot-multiple_comparisons.html</loc></url>
+<url><loc>https://bio-datascience.github.io/DGrowthR/reference/dot-pad_inflections.html</loc></url>
 <url><loc>https://bio-datascience.github.io/DGrowthR/reference/dot-predict_gp.html</loc></url>
 <url><loc>https://bio-datascience.github.io/DGrowthR/reference/dot-predict_lagp.html</loc></url>
 <url><loc>https://bio-datascience.github.io/DGrowthR/reference/dot-sample_posterior_fit.html</loc></url>
@@ -37,6 +41,7 @@
 <url><loc>https://bio-datascience.github.io/DGrowthR/reference/example_metadata.html</loc></url>
 <url><loc>https://bio-datascience.github.io/DGrowthR/reference/example_od_data.html</loc></url>
 <url><loc>https://bio-datascience.github.io/DGrowthR/reference/fit_predict_gp.html</loc></url>
+<url><loc>https://bio-datascience.github.io/DGrowthR/reference/gamma_pvalues.html</loc></url>
 <url><loc>https://bio-datascience.github.io/DGrowthR/reference/gather_od_data.html</loc></url>
 <url><loc>https://bio-datascience.github.io/DGrowthR/reference/growth_comparison.html</loc></url>
 <url><loc>https://bio-datascience.github.io/DGrowthR/reference/growth_comparison_result.html</loc></url>
