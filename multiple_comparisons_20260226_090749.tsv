@@ -1,0 +1,2 @@
+comparison	likelihood_ratio	llik.alternative_model	llik.null_model	AUC.treatment	AUC.reference	AUC.FoldChange	max_growth.treatment	max_growth.reference	max_growth.FoldChange	euclidean.distance	empirical_p.value
+combination.label: A22 + Amikacin v.s. A22	8.310418027051881	-104.81202242689315	-113.12244045394503	0.23908128321817523	1.8095674148910987	0.13212068323664158	0.030316176897789412	0.33257656996042195	0.0911554800790602	1.4018162315161369	0.03196803196803197
