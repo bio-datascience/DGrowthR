@@ -739,7 +739,7 @@ growth_comparison_result(object.comparison.permutation)
 #>   max_growth.treatment max_growth.reference max_growth.FoldChange
 #> 1             1.476493            0.8666307              1.703716
 #>   euclidean.distance empirical_p.value
-#> 1           6.224746         0.1287129
+#> 1           6.224746         0.1188119
 ```
 
 We can get a visual inspection of the null vs observed test statistic
