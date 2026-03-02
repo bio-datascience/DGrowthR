@@ -6,3 +6,4 @@
 .quarto
 permAprox_0.0.1.9000.tar.gz
 docs
+workflow/logdir/**

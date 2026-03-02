@@ -76,13 +76,21 @@ for (combo in combo_labels) {
   }
 }
 
-results <- multiple_comparisons(
+rdf <- multiple_comparisons(
   dgobj.ecbw.logged,
-  comparison_list = comparison_list[1:3],
+  comparison_list = comparison_list[1:2928],
   predict_n_steps = 50,
   downsample_every_n_timepoints = 3,
   permutation_test = TRUE,
-  n_permutations = 1000,
-  n_cores = 2,
+  n_permutations = 500,
+  n_cores = 20,
   save_perm_stats = TRUE
 )
+
+# Save results
+saveRDS(rdf$result_df, "tmp_permutations/broch18_results_1-2928.rds")
+saveRDS(rdf$permutation_df, "tmp_permutations/broch18_permutations_1-2928.rds")
+
+laGP::deleteGPseps()
+
+saveRDS(dgobj.ecbw.logged, "tmp_permutations/dgobj_broch18_mc.rds")
