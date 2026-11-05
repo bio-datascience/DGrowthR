@@ -11,7 +11,7 @@ Authors@R: c(
     )
 URL: https://bio-datascience.github.io/DGrowthR/, https://github.com/bio-datascience/DGrowthR/
 BugReports: https://github.com/bio-datascience/DGrowthR/issues
-Version: 1.0
+Version: 1.1.0.9000
 License: GPL-3 + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -29,6 +29,7 @@ Imports:
     mclust,
     methods,
     mvtnorm,
+    permApprox,
     pracma,
     purrr,
     readr,
@@ -47,7 +48,6 @@ LazyData: true
 Suggests: 
     knitr,
     rmarkdown,
-    permApprox,
     tidyverse,
     testthat (>= 3.0.0)
 Remotes:

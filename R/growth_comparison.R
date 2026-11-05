@@ -13,6 +13,16 @@
 #' @param permutation_test A logical value indicating if a permutation test should be performed.
 #' @param n_permutations A numerical values indicating the number of permutations to build in order to gather the null distribution of test statistics.
 #' @param n_cores A numeric value indicating the number cores to be used. Useful when performing a permutation test.
+#' @param gp_backend A character value indicating which GP backend to use.
+#' @param gp_lengthscale Optional Gaussian-kernel lengthscale value or vector.
+#' @param gp_nugget Optional observation-noise variance used as a nugget for
+#' numerical stability.
+#' @param gp_replicate_strategy A character value indicating whether replicate
+#' rows with identical covariates should be used as raw observations or
+#' aggregated to unbiased mean estimates with heteroskedastic nugget weights.
+#' @param optimize_hyperparameters A logical value. If TRUE, estimate GP
+#' lengthscale and nugget by maximum likelihood when supported by the selected
+#' backend.
 #'
 #' @return An object with the updated growth_comparison slot.
 #'
@@ -24,7 +34,12 @@ setGeneric(name = "growth_comparison", function(object,
                                                 save_gp_data=FALSE,
                                                 permutation_test=FALSE,
                                                 n_permutations=NULL,
-                                                n_cores=1) standardGeneric("growth_comparison"))
+                                                n_cores=1,
+                                                gp_backend=c("lagp", "exact_gaussian", "exact"),
+                                                gp_lengthscale=NULL,
+                                                gp_nugget=NULL,
+                                                gp_replicate_strategy=c("raw", "aggregate"),
+                                                optimize_hyperparameters=TRUE) standardGeneric("growth_comparison"))
 #' @rdname growth_comparison
 #' @export
 setMethod(
@@ -37,7 +52,15 @@ setMethod(
                         save_gp_data=FALSE,
                         permutation_test=FALSE,
                         n_permutations=NULL,
-                        n_cores=1) {
+                        n_cores=1,
+                        gp_backend=c("lagp", "exact_gaussian", "exact"),
+                        gp_lengthscale=NULL,
+                        gp_nugget=NULL,
+                        gp_replicate_strategy=c("raw", "aggregate"),
+                        optimize_hyperparameters=TRUE) {
+
+    gp_backend <- .standardize_gp_backend(gp_backend)
+    gp_replicate_strategy <- match.arg(gp_replicate_strategy)
 
     message(paste("[DGrowthR::growth_comparison] >> Comparing", comparison_info[2], "to", comparison_info[3], "from the", comparison_info[1], "field."))
 
@@ -53,7 +76,12 @@ setMethod(
                                         estimate_derivatives = FALSE,
                                         complete_sigma = FALSE,
                                         t_steps = predict_n_steps,
-                                        delete=TRUE)
+                                        delete=TRUE,
+                                        gp_backend=gp_backend,
+                                        gp_lengthscale=gp_lengthscale,
+                                        gp_nugget=gp_nugget,
+                                        gp_replicate_strategy=gp_replicate_strategy,
+                                        optimize_hyperparameters=optimize_hyperparameters)
 
     # Prepare dataframe for null fit
     od_data.null <- od_data.comparison %>%
@@ -64,7 +92,12 @@ setMethod(
                                         estimate_derivatives = FALSE,
                                         complete_sigma = FALSE,
                                         t_steps = predict_n_steps,
-                                        delete=TRUE)
+                                        delete=TRUE,
+                                        gp_backend=gp_backend,
+                                        gp_lengthscale=gp_lengthscale,
+                                        gp_nugget=gp_nugget,
+                                        gp_replicate_strategy=gp_replicate_strategy,
+                                        optimize_hyperparameters=optimize_hyperparameters)
 
 
     # Prepare output data.frame
@@ -101,7 +134,8 @@ setMethod(
                               mutate(covariate_value = if_else(contrast_val==1, comparison_info[2], comparison_info[3])) %>%
                               select(-contrast_val),
 
-                            "comparison_info" = comparison_info
+                            "comparison_info" = comparison_info,
+                            "subsampled_timepoints" = attr(object@od_data, "subsampled_timepoints")
 
     )
 
@@ -121,7 +155,12 @@ setMethod(
       object <- perm_test(object, num_perms = n_permutations,
                           n.cores = n_cores,
                           predict_n_steps=predict_n_steps,
-                          gp.delete = TRUE)
+                          gp.delete = TRUE,
+                          gp_backend=gp_backend,
+                          gp_lengthscale=gp_lengthscale,
+                          gp_nugget=gp_nugget,
+                          gp_replicate_strategy=gp_replicate_strategy,
+                          optimize_hyperparameters=optimize_hyperparameters)
 
       object@growth_comparison$result$empirical_p.value <- calculate_emp_p_value(object)
     }
@@ -149,6 +188,15 @@ setMethod(
 #' @param predict_n_steps A numeric value indicating the number of timepoints to make a prediction for with the fitted GP model. More points increases estimate accuracy, but adds compute time.
 #' @param n.cores The number of CPU cores to use for parallel processing. Defaults to 1 (no parallel processing).
 #' @param gp.delete A logical value indicating whether to delete the GPsep identifiers after the permutation test. Defaults to TRUE.
+#' @param gp_backend A character value indicating which GP backend to use.
+#' @param gp_lengthscale Optional Gaussian-kernel lengthscale value or vector.
+#' @param gp_nugget Optional observation-noise variance used as a nugget for
+#' numerical stability.
+#' @param gp_replicate_strategy A character value indicating whether replicate
+#' rows with identical covariates should be used as raw observations or
+#' aggregated to unbiased mean estimates with heteroskedastic nugget weights.
+#' @param optimize_hyperparameters A logical value. If TRUE, estimate GP
+#' lengthscale and nugget by maximum likelihood.
 #' @param ... Additional arguments to be passed to the GP modelling function.
 #'
 #' @return A modified DGrowthR object with the calculated log-likelihood differences for each permutation.
@@ -158,7 +206,10 @@ setMethod(
 #' @export
 setGeneric(
   name = "perm_test",
-  def = function(object, num_perms = 1000, n.cores = 1, predict_n_steps=100, gp.delete = TRUE, ...) {
+  def = function(object, num_perms = 1000, n.cores = 1, predict_n_steps=100, gp.delete = TRUE,
+                 gp_backend=c("lagp", "exact_gaussian", "exact"), gp_lengthscale=NULL,
+                 gp_nugget=NULL, gp_replicate_strategy=c("raw", "aggregate"),
+                 optimize_hyperparameters=TRUE, ...) {
     standardGeneric("perm_test")
   }
 )
@@ -167,7 +218,13 @@ setGeneric(
 setMethod(
   f = "perm_test",
   signature = "DGrowthR",
-  definition = function(object, num_perms = 1000, n.cores = 1, predict_n_steps=100, gp.delete = TRUE, ...) {
+  definition = function(object, num_perms = 1000, n.cores = 1, predict_n_steps=100, gp.delete = TRUE,
+                        gp_backend=c("lagp", "exact_gaussian", "exact"), gp_lengthscale=NULL,
+                        gp_nugget=NULL, gp_replicate_strategy=c("raw", "aggregate"),
+                        optimize_hyperparameters=TRUE, ...) {
+
+    gp_backend <- .standardize_gp_backend(gp_backend)
+    gp_replicate_strategy <- match.arg(gp_replicate_strategy)
 
     message(paste("[DGrowthR::perm_test]", ">>", "Perform permutation test with", num_perms, "permutations"))
 
@@ -209,7 +266,12 @@ setMethod(
                                           estimate_derivatives = FALSE,
                                           complete_sigma = FALSE,
                                           delete=TRUE,
-                                          t_steps = predict_n_steps)
+                                          t_steps = predict_n_steps,
+                                          gp_backend=gp_backend,
+                                          gp_lengthscale=gp_lengthscale,
+                                          gp_nugget=gp_nugget,
+                                          gp_replicate_strategy=gp_replicate_strategy,
+                                          optimize_hyperparameters=optimize_hyperparameters)
 
 
       # Likelihood ratio from permutation test.

@@ -4,5 +4,12 @@
 .httr-oauth
 .DS_Store
 .quarto
-permAprox_0.0.1.9000.tar.gz
-docs
+*.tar.gz
+DGrowthR.Rcheck/
+docs/*
+!docs/
+!docs/future_speed_optimizations.md
+!docs/development_release.md
+!docs/spline_contribution.md
+src/*.o
+src/*.so

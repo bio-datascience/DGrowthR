@@ -14,6 +14,11 @@
   sample_n_curves,
   save_gp_data,
   n_cores,
+  gp_backend,
+  gp_lengthscale,
+  gp_nugget,
+  gp_replicate_strategy,
+  optimize_hyperparameters,
   detect_polyauxic,
   polyauxic_ratio_threshold,
   polyauxic_parameter_criteria
@@ -39,6 +44,20 @@ than one growth curve per group.}
 \item{save_gp_data}{A logical value, indicating if the mean GP values and GP fit parameters should be saved to object.}
 
 \item{n_cores}{A numeric values indicating the number of cores the user wants to use to model curves in parallel.}
+
+\item{gp_backend}{A character value indicating which GP backend to use.}
+
+\item{gp_lengthscale}{Optional Gaussian-kernel lengthscale value or vector.}
+
+\item{gp_nugget}{Optional observation-noise variance used as a nugget for
+numerical stability.}
+
+\item{gp_replicate_strategy}{A character value indicating whether replicate
+rows with identical covariates should be used as raw observations or
+aggregated to unbiased mean estimates with heteroskedastic nugget weights.}
+
+\item{optimize_hyperparameters}{A logical value. If TRUE, estimate GP
+lengthscale and nugget by maximum likelihood.}
 
 \item{detect_polyauxic}{A logical value indicating if the function should attempt to detect polyauxic growth curves. This is done by looking for multiple peaks in the second derivative of the mean GP fit. If TRUE, then and additional dataframe with the timepoints of the beginning and end of each phase is included. If set to TRUE, then save_gp_data must also be set to TRUE.}
 

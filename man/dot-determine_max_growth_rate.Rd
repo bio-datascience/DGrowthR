@@ -8,6 +8,9 @@
 }
 \arguments{
 \item{df}{A data.frame with timepoint and first_derivative fields.}
+
+\item{max_od_data}{A data.frame with the information output from
+\code{.determine_max_growth()}.}
 }
 \value{
 A data.frame with the maximum specific growth rate and doubling time

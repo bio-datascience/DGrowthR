@@ -2,6 +2,14 @@
 
 # DGrowthR: A comprehensive workflow for growth curve analysis
 
+Development of the next DGrowthR version takes place on
+`codex/dgrowthr-development`. The manuscript-reviewed version remains separate.
+This branch develops exact Gaussian GP fitting, reusable fit/predict/QC steps,
+timepoint subsampling for fitting and permutation inference, and a separately
+validated spline modelling track. See the
+[development roadmap](docs/development_release.md) and
+[spline contribution brief](docs/spline_contribution.md).
+
 This repository hosts the `DGrowthR` R package and the workflow for the
 detailed analysis of publicly available datasets mentioned in our
 pre-print. This workflow is designed to showcase the application of the

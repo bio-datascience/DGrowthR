@@ -11,6 +11,11 @@ perm_test(
   n.cores = 1,
   predict_n_steps = 100,
   gp.delete = TRUE,
+  gp_backend = c("lagp", "exact_gaussian", "exact"),
+  gp_lengthscale = NULL,
+  gp_nugget = NULL,
+  gp_replicate_strategy = c("raw", "aggregate"),
+  optimize_hyperparameters = TRUE,
   ...
 )
 
@@ -20,6 +25,11 @@ perm_test(
   n.cores = 1,
   predict_n_steps = 100,
   gp.delete = TRUE,
+  gp_backend = c("lagp", "exact_gaussian", "exact"),
+  gp_lengthscale = NULL,
+  gp_nugget = NULL,
+  gp_replicate_strategy = c("raw", "aggregate"),
+  optimize_hyperparameters = TRUE,
   ...
 )
 }
@@ -33,6 +43,20 @@ perm_test(
 \item{predict_n_steps}{A numeric value indicating the number of timepoints to make a prediction for with the fitted GP model. More points increases estimate accuracy, but adds compute time.}
 
 \item{gp.delete}{A logical value indicating whether to delete the GPsep identifiers after the permutation test. Defaults to TRUE.}
+
+\item{gp_backend}{A character value indicating which GP backend to use.}
+
+\item{gp_lengthscale}{Optional Gaussian-kernel lengthscale value or vector.}
+
+\item{gp_nugget}{Optional observation-noise variance used as a nugget for
+numerical stability.}
+
+\item{gp_replicate_strategy}{A character value indicating whether replicate
+rows with identical covariates should be used as raw observations or
+aggregated to unbiased mean estimates with heteroskedastic nugget weights.}
+
+\item{optimize_hyperparameters}{A logical value. If TRUE, estimate GP
+lengthscale and nugget by maximum likelihood.}
 
 \item{...}{Additional arguments to be passed to the GP modelling function.}
 }

@@ -15,6 +15,11 @@ estimate_growth_parameters(
   sample_n_curves = 100,
   save_gp_data = FALSE,
   n_cores = 1,
+  gp_backend = c("lagp", "exact_gaussian", "exact"),
+  gp_lengthscale = NULL,
+  gp_nugget = NULL,
+  gp_replicate_strategy = c("raw", "aggregate"),
+  optimize_hyperparameters = TRUE,
   detect_polyauxic = FALSE,
   polyauxic_ratio_threshold = 0.2,
   polyauxic_parameter_criteria = "carrying_capacity"
@@ -30,6 +35,11 @@ estimate_growth_parameters(
   sample_n_curves = 100,
   save_gp_data = FALSE,
   n_cores = 1,
+  gp_backend = c("lagp", "exact_gaussian", "exact"),
+  gp_lengthscale = NULL,
+  gp_nugget = NULL,
+  gp_replicate_strategy = c("raw", "aggregate"),
+  optimize_hyperparameters = TRUE,
   detect_polyauxic = FALSE,
   polyauxic_ratio_threshold = 0.2,
   polyauxic_parameter_criteria = "carrying_capacity"
@@ -55,6 +65,24 @@ than one growth curve per group.}
 \item{save_gp_data}{A logical value, indicating if the mean GP values and GP fit parameters should be saved to object.}
 
 \item{n_cores}{A numeric values indicating the number of cores the user wants to use to model curves in parallel.}
+
+\item{gp_backend}{A character value indicating which GP backend to use. The
+default \code{"lagp"} preserves previous DGrowthR behavior. The \code{"exact_gaussian"}
+backend uses DGrowthR's built-in dense Gaussian-kernel GP for short growth
+trajectories. The old \code{"exact"} value is accepted as an alias.}
+
+\item{gp_lengthscale}{Optional Gaussian-kernel lengthscale value or vector.}
+
+\item{gp_nugget}{Optional observation-noise variance used as a nugget for
+numerical stability.}
+
+\item{gp_replicate_strategy}{A character value indicating whether replicate
+rows with identical covariates should be used as raw observations or
+aggregated to unbiased mean estimates with heteroskedastic nugget weights.}
+
+\item{optimize_hyperparameters}{A logical value. If \code{TRUE}, estimate GP
+lengthscale and nugget by maximum likelihood. Set to \code{FALSE} for faster
+approximate laGP fits that use initial hyperparameter values.}
 
 \item{detect_polyauxic}{A logical value indicating if the function should attempt to detect polyauxic growth curves. This is done by looking for multiple peaks in the second derivative of the mean GP fit. If TRUE, then additional columns to the growth parameter table will be added with the relevant information.}
 

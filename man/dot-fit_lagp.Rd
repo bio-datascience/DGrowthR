@@ -4,7 +4,7 @@
 \alias{.fit_lagp}
 \title{Fit a Gaussian process model to data with laGP}
 \usage{
-.fit_lagp(X, y, delete = FALSE)
+.fit_lagp(X, y, delete = FALSE, optimize_hyperparameters = TRUE)
 }
 \arguments{
 \item{X}{A data.frame containing the covariates used for model fitting.}
@@ -12,6 +12,10 @@
 \item{y}{A vector containing the values to be predicted.}
 
 \item{delete}{A logical value. If TRUE, the Gaussian process model will be deleted after fitting.}
+
+\item{optimize_hyperparameters}{A logical value. If TRUE, estimate the
+lengthscale and nugget by maximum likelihood. If FALSE, use the initial
+values from \code{laGP::darg()} and \code{laGP::garg()} without optimization.}
 }
 \value{
 The input object, with the Gaussian process information as a list.

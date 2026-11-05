@@ -11,7 +11,12 @@ fit_predict_gp(
   prepare_dataframe = FALSE,
   estimate_derivatives = FALSE,
   delete = TRUE,
-  pred_for_t = NULL
+  pred_for_t = NULL,
+  gp_backend = c("lagp", "exact_gaussian", "exact"),
+  gp_lengthscale = NULL,
+  gp_nugget = NULL,
+  gp_replicate_strategy = c("raw", "aggregate"),
+  optimize_hyperparameters = TRUE
 )
 }
 \arguments{
@@ -28,6 +33,25 @@ fit_predict_gp(
 \item{delete}{A logical indicating whether the GP model should be deleted from memory FALSE.}
 
 \item{pred_for_t}{A numeric value inidicating a specific timepoint t for which OD should be predicted}
+
+\item{gp_backend}{A character value indicating which GP backend to use. The
+default \code{"lagp"} preserves previous DGrowthR behavior. The \code{"exact_gaussian"}
+backend uses dense Cholesky GP inference with a Gaussian kernel, marginal
+log-likelihood, explicit nugget, and analytic derivatives for short
+trajectories. The old \code{"exact"} value is accepted as an alias.}
+
+\item{gp_lengthscale}{Optional Gaussian-kernel lengthscale value or vector.}
+
+\item{gp_nugget}{Optional observation-noise variance used as a nugget for
+numerical stability.}
+
+\item{gp_replicate_strategy}{A character value indicating whether replicate
+rows with identical covariates should be used as raw observations or
+aggregated to unbiased mean estimates with heteroskedastic nugget weights.}
+
+\item{optimize_hyperparameters}{A logical value. If \code{TRUE}, estimate the
+lengthscale and nugget by maximum likelihood. Set to \code{FALSE} for faster
+approximate fits that use initial hyperparameter values.}
 }
 \value{
 An object with the fitted model and prediction results. The results include the predictions (p) and the prediction inputs (XX).

@@ -13,6 +13,19 @@
 #' @param sample_n_curves A numeric values. If sample_posterior_gpfit is TRUE, then sample_n_curves are sampled from posterior.
 #' @param save_gp_data A logical value, indicating if the mean GP values and GP fit parameters should be saved to object.
 #' @param n_cores A numeric values indicating the number of cores the user wants to use to model curves in parallel.
+#' @param gp_backend A character value indicating which GP backend to use. The
+#' default "lagp" preserves previous DGrowthR behavior. The "exact_gaussian"
+#' backend uses DGrowthR's built-in dense Gaussian-kernel GP for short growth
+#' trajectories. The old "exact" value is accepted as an alias.
+#' @param gp_lengthscale Optional Gaussian-kernel lengthscale value or vector.
+#' @param gp_nugget Optional observation-noise variance used as a nugget for
+#' numerical stability.
+#' @param gp_replicate_strategy A character value indicating whether replicate
+#' rows with identical covariates should be used as raw observations or
+#' aggregated to unbiased mean estimates with heteroskedastic nugget weights.
+#' @param optimize_hyperparameters A logical value. If TRUE, estimate GP
+#' lengthscale and nugget by maximum likelihood. Set to FALSE for faster
+#' approximate laGP fits that use initial hyperparameter values.
 #' @param detect_polyauxic A logical value indicating if the function should attempt to detect polyauxic growth curves. This is done by looking for multiple peaks in the second derivative of the mean GP fit. If TRUE, then additional columns to the growth parameter table will be added with the relevant information.
 #' @param polyauxic_ratio_threshold A numeric value. Potential growth phases are assessed by comparing their respective carrying capacity. If the carrying capacity of a potential second phase is at least this fraction of the carrying capacity of the first phase, then the second phase is considered a true growth phase. Only relevant if detect_polyauxic is TRUE.
 #' @param polyauxic_parameter_criteria A character value. Either "growth_rate" or "carrying_capacity". Indicates which parameter should be used to assess the relevance of potential growth phases. Only relevant if detect_polyauxic is TRUE.
@@ -29,6 +42,11 @@ setGeneric("estimate_growth_parameters", function(object,
                                                   sample_n_curves=100,
                                                   save_gp_data = FALSE,
                                                   n_cores=1,
+                                                  gp_backend=c("lagp", "exact_gaussian", "exact"),
+                                                  gp_lengthscale=NULL,
+                                                  gp_nugget=NULL,
+                                                  gp_replicate_strategy=c("raw", "aggregate"),
+                                                  optimize_hyperparameters=TRUE,
                                                   detect_polyauxic = FALSE,
                                                   polyauxic_ratio_threshold = 0.2,
                                                   polyauxic_parameter_criteria = "carrying_capacity"){
@@ -45,9 +63,16 @@ setMethod(
                         sample_posterior_gpfit=FALSE,
                         od_auc_at_t = NULL,
                         sample_n_curves=100, save_gp_data = FALSE, n_cores=1,
+                        gp_backend=c("lagp", "exact_gaussian", "exact"),
+                        gp_lengthscale=NULL,
+                        gp_nugget=NULL,
+                        gp_replicate_strategy=c("raw", "aggregate"),
+                        optimize_hyperparameters=TRUE,
                         detect_polyauxic = FALSE, polyauxic_ratio_threshold = 0.2,
                         polyauxic_parameter_criteria = "carrying_capacity"){
 
+    gp_backend <- .standardize_gp_backend(gp_backend)
+    gp_replicate_strategy <- match.arg(gp_replicate_strategy)
 
     # Some checks first
     if(!object@preprocessed){
@@ -58,16 +83,74 @@ setMethod(
       warning("OD data is not log-transformed. This may lead to innacurate estimates. Try running preprocess_data(..., log_transform=TRUE)")
     }
 
+    gpfit_parameters <- object@gpfit_info$gpfit_parameters
+
+    if (!is.null(object@gpfit_info$fits)) {
+      if (missing(model_covariate)) model_covariate <- gpfit_parameters$model_covariate
+      if (!identical(model_covariate, gpfit_parameters$model_covariate)) {
+        stop("Stored GP fits use a different model_covariate; call fit_gp() again")
+      }
+      if (is.null(object@gpfit_info$gpfit_data) ||
+          !identical(gpfit_parameters$predict_n_steps, predict_n_steps) ||
+          (sample_posterior_gpfit && !isTRUE(gpfit_parameters$complete_sigma))) {
+        object <- predict_gp(object, predict_n_steps = predict_n_steps,
+                             complete_sigma = sample_posterior_gpfit)
+      }
+      rows <- lapply(names(object@gpfit_info$fits), function(id) {
+        entry <- object@gpfit_info$fits[[id]]
+        if (is.null(entry$fit)) {
+          return(data.frame(gpfit_id = id, gpfit_converged = entry$status))
+        }
+        prediction <- entry$prediction
+        if (sample_posterior_gpfit) {
+          sampled <- .sample_posterior_fit(list(prediction = prediction),
+                                           n_samples = sample_n_curves)
+          sampled <- sampled %>% group_by(sampled_id) %>%
+            group_modify(~.estimate_derivatives(.x)) %>% ungroup()
+          params <- sampled %>% group_by(sampled_id) %>%
+            group_modify(~.characterize_growth(.x)) %>% ungroup() %>%
+            select(-sampled_id) %>%
+            summarise(across(where(is.numeric),
+                             list(mean = ~mean(.x, na.rm = TRUE),
+                                  sd = ~sd(.x, na.rm = TRUE)),
+                             .names = "{.col}.{.fn}"))
+        } else {
+          params <- .characterize_growth(prediction$prediction_dataframe,
+                                         od_auc_at_t, detect_polyauxic,
+                                         polyauxic_ratio_threshold,
+                                         polyauxic_parameter_criteria)
+        }
+        params$gpfit_id <- id
+        params$gpfit_converged <- if (is.na(entry$fit$mle$conv)) {
+          "not_estimated"
+        } else if (entry$fit$mle$conv == 0) "yes" else "no"
+        params
+      })
+      object@growth_parameters <- dplyr::bind_rows(rows)
+      if (!save_gp_data) object@gpfit_info$gpfit_data <- NULL
+      return(object)
+    }
+
     # Determine if we need to run (or re-run) the GP fit due to not fit data found or re-sampling requested.
     if(length(object@gpfit_info) == 0 || sample_posterior_gpfit){
       message("[DGrowthR::estimate_growth_parameters] >> Fitting GP models and estimating growth parameters...")
-      object <- .fit_and_estimate(object,  model_covariate, predict_n_steps, downsample_every_n_timepoints, sample_posterior_gpfit, od_auc_at_t, sample_n_curves, save_gp_data, n_cores, detect_polyauxic, polyauxic_ratio_threshold, polyauxic_parameter_criteria)
+      object <- .fit_and_estimate(object,  model_covariate, predict_n_steps, downsample_every_n_timepoints, sample_posterior_gpfit, od_auc_at_t, sample_n_curves, save_gp_data, n_cores, gp_backend, gp_lengthscale, gp_nugget, gp_replicate_strategy, optimize_hyperparameters, detect_polyauxic, polyauxic_ratio_threshold, polyauxic_parameter_criteria)
 
     # Check if paramters for GP fit have changed
-      }else if(object@gpfit_info$gpfit_parameters$model_covariate != model_covariate || object@gpfit_info$gpfit_parameters$predict_n_steps != predict_n_steps || object@gpfit_info$gpfit_parameters$downsample_every_n_timepoints != downsample_every_n_timepoints || object@gpfit_info$gpfit_parameters$detect_polyauxic != detect_polyauxic || object@gpfit_info$gpfit_parameters$polyauxic_ratio_threshold != polyauxic_ratio_threshold || object@gpfit_info$gpfit_parameters$polyauxic_parameter_criteria != polyauxic_parameter_criteria){
+      }else if(!identical(gpfit_parameters$model_covariate, model_covariate) ||
+               !identical(gpfit_parameters$predict_n_steps, predict_n_steps) ||
+               !identical(gpfit_parameters$downsample_every_n_timepoints, downsample_every_n_timepoints) ||
+               !identical(gpfit_parameters$gp_backend, gp_backend) ||
+               !identical(gpfit_parameters$gp_lengthscale, gp_lengthscale) ||
+               !identical(gpfit_parameters$gp_nugget, gp_nugget) ||
+               !identical(gpfit_parameters$gp_replicate_strategy, gp_replicate_strategy) ||
+               !identical(gpfit_parameters$optimize_hyperparameters, optimize_hyperparameters) ||
+               !identical(gpfit_parameters$detect_polyauxic, detect_polyauxic) ||
+               !identical(gpfit_parameters$polyauxic_ratio_threshold, polyauxic_ratio_threshold) ||
+               !identical(gpfit_parameters$polyauxic_parameter_criteria, polyauxic_parameter_criteria)){
 
       message("[DGrowthR::estimate_growth_parameters] >> Fitting new GP models due to change in hyperparameters...")
-      object <- .fit_and_estimate(object,  model_covariate, predict_n_steps, downsample_every_n_timepoints, sample_posterior_gpfit, od_auc_at_t, sample_n_curves, save_gp_data, n_cores, detect_polyauxic, polyauxic_ratio_threshold, polyauxic_parameter_criteria)
+      object <- .fit_and_estimate(object,  model_covariate, predict_n_steps, downsample_every_n_timepoints, sample_posterior_gpfit, od_auc_at_t, sample_n_curves, save_gp_data, n_cores, gp_backend, gp_lengthscale, gp_nugget, gp_replicate_strategy, optimize_hyperparameters, detect_polyauxic, polyauxic_ratio_threshold, polyauxic_parameter_criteria)
 
     # If there is GP data, no changes to the modelling are requested, and no sampling posterior requested, then use available gpfits
     }else{
@@ -103,6 +186,15 @@ setMethod(
 #' @param sample_n_curves A numeric values. If sample_posterior_gpfit is TRUE, then sample_n_curves are sampled from posterior.
 #' @param save_gp_data A logical value, indicating if the mean GP values and GP fit parameters should be saved to object.
 #' @param n_cores A numeric values indicating the number of cores the user wants to use to model curves in parallel.
+#' @param gp_backend A character value indicating which GP backend to use.
+#' @param gp_lengthscale Optional Gaussian-kernel lengthscale value or vector.
+#' @param gp_nugget Optional observation-noise variance used as a nugget for
+#' numerical stability.
+#' @param gp_replicate_strategy A character value indicating whether replicate
+#' rows with identical covariates should be used as raw observations or
+#' aggregated to unbiased mean estimates with heteroskedastic nugget weights.
+#' @param optimize_hyperparameters A logical value. If TRUE, estimate GP
+#' lengthscale and nugget by maximum likelihood.
 #' @param detect_polyauxic A logical value indicating if the function should attempt to detect polyauxic growth curves. This is done by looking for multiple peaks in the second derivative of the mean GP fit. If TRUE, then and additional dataframe with the timepoints of the beginning and end of each phase is included. If set to TRUE, then save_gp_data must also be set to TRUE.
 #' @param polyauxic_ratio_threshold A numeric value. Potential growth phases are assessed by comparing their respective carrying capacity. If the carrying capacity of a potential second phase is at least this fraction of the carrying capacity of the first phase, then the second phase is considered a true growth phase. Only relevant if detect_polyauxic is TRUE.
 #' @param polyauxic_parameter_criteria A character value. Either "growth_rate" or "carrying_capacity". Indicates which parameter should be used to assess the relevance of potential growth phases. Only relevant if detect_polyauxic is TRUE.
@@ -120,6 +212,10 @@ setMethod(
                               downsample_every_n_timepoints,
                               sample_posterior_gpfit, od_auc_at_t,
                               sample_n_curves, save_gp_data, n_cores,
+                              gp_backend,
+                              gp_lengthscale, gp_nugget,
+                              gp_replicate_strategy,
+                              optimize_hyperparameters,
                               detect_polyauxic, polyauxic_ratio_threshold, polyauxic_parameter_criteria){
 
   # Gather od and metadata
@@ -156,20 +252,7 @@ setMethod(
   # Print how many models we will create
   message(paste("[DGrowthR::estimate_growth_parameters] >> Modelling the", model_covariate, "field from metadata.", length(model_groups), "models will be created."))
 
-  # Registering parellelization
-  #doParallel::registerDoParallel(n_cores)
-
-  cl <- snow::makeSOCKcluster(n_cores)
-  doSNOW::registerDoSNOW(cl)
-
-  # Set up progress bar
-  pb <- txtProgressBar(max = length(model_groups), style = 3)
-  progress <- function(n) setTxtProgressBar(pb, n)
-
-  # Iterate over groupings and fit GP and estimate growth params
-  estimate_list <- foreach::foreach(i = model_groups, .combine = c,
-                                    .multicombine = TRUE, .init = c(),
-                                    .options.snow = list(progress = progress)) %dopar% {
+  fit_one_group <- function(i) {
 
     # Gather the relevant growth data
     od_for_gp <- gather_od_data(object, model_covariate, i, downsample_every_n_timepoints) %>%
@@ -198,7 +281,12 @@ setMethod(
                        prepare_dataframe=TRUE,
                        estimate_derivatives=TRUE,
                        delete=TRUE,
-                       pred_for_t=od_auc_at_t)
+                       pred_for_t=od_auc_at_t,
+                       gp_backend=gp_backend,
+                       gp_lengthscale=gp_lengthscale,
+                       gp_nugget=gp_nugget,
+                       gp_replicate_strategy=gp_replicate_strategy,
+                       optimize_hyperparameters=optimize_hyperparameters)
 
         },
       error = function(cond){
@@ -242,7 +330,11 @@ setMethod(
     # Add identifying column
     growth_params <- growth_params %>%
       mutate(gpfit_id = i,
-             gpfit_converged = ifelse(gpfit$mle$conv == 0, "yes", "no")) %>%
+             gpfit_converged = case_when(
+               is.na(gpfit$mle$conv) ~ "not_estimated",
+               gpfit$mle$conv == 0 ~ "yes",
+               TRUE ~ "no"
+             )) %>%
       relocate(gpfit_id)
 
 
@@ -252,27 +344,49 @@ setMethod(
     if(save_gp_data){
       out_list$gp_data <- gpfit$prediction$prediction_dataframe
       out_list$gp_data$gpfit_id <- i
+
+      if(!is.null(gpfit$symbolic_mean)){
+        out_list$gp_symbolic_mean <- list(gpfit$symbolic_mean)
+        out_list$gp_symbolic_mean[[1]]$gpfit_id <- i
+      }
     }
 
     return(out_list)
   }
 
-  close(pb)
-  snow::stopCluster(cl)
+  if(n_cores > 1){
+    cl <- snow::makeSOCKcluster(n_cores)
+    doSNOW::registerDoSNOW(cl)
+    on.exit(snow::stopCluster(cl), add = TRUE)
+
+    # Set up progress bar
+    pb <- txtProgressBar(max = length(model_groups), style = 3)
+    progress <- function(n) setTxtProgressBar(pb, n)
+    on.exit(close(pb), add = TRUE)
+
+    # Iterate over groupings and fit GP and estimate growth params
+    estimate_list <- foreach::foreach(i = model_groups, .combine = c,
+                                      .multicombine = TRUE, .init = c(),
+                                      .options.snow = list(progress = progress)) %dopar% {
+      fit_one_group(i)
+    }
+  }else{
+    estimate_list <- unlist(lapply(model_groups, fit_one_group), recursive = FALSE)
+  }
 
   # Update object with growth parameters
   message("[DGrowthR::estimate_growth_parameters] >> Updating growth_parameters slot...")
   #print(length(estimate_list))
-  if(length(model_groups) == 1){
-
-    slot(object, "growth_parameters") <- estimate_list$growth_parameters
-
-  }else{
-
-    slot(object, "growth_parameters") <- bind_rows(estimate_list[names(estimate_list) == "growth_parameters"]) %>%
-      relocate(gpfit_converged, .after = last_col())
-
+  estimate_item <- function(item_name) {
+    estimate_list[grepl(paste0("(^|[.])", item_name, "$"), names(estimate_list))]
   }
+
+  growth_parameters <- bind_rows(estimate_item("growth_parameters"))
+  if(!"gpfit_converged" %in% colnames(growth_parameters)){
+    growth_parameters$gpfit_converged <- "yes"
+  }
+  slot(object, "growth_parameters") <- growth_parameters %>%
+    relocate(gpfit_converged, .after = last_col())
 
 
   # Update with gp if necessary
@@ -281,18 +395,19 @@ setMethod(
 
     gpfit_list <- list("gpfit_parameters" = list("model_covariate"=model_covariate,
                                                 "predict_n_steps"=predict_n_steps,
-                                                "downsample_every_n_timepoints"=downsample_every_n_timepoints))
+                                                "downsample_every_n_timepoints"=downsample_every_n_timepoints,
+                                                "gp_backend"=gp_backend,
+                                                "gp_lengthscale"=gp_lengthscale,
+                                                "gp_nugget"=gp_nugget,
+                                                "gp_replicate_strategy"=gp_replicate_strategy,
+                                                "optimize_hyperparameters"=optimize_hyperparameters,
+                                                "detect_polyauxic"=detect_polyauxic,
+                                                "polyauxic_ratio_threshold"=polyauxic_ratio_threshold,
+                                                "polyauxic_parameter_criteria"=polyauxic_parameter_criteria))
 
-    # Update object with growth parameters
-    if(length(model_groups) == 1){
-
-      gpfit_list$gpfit_data <- estimate_list$gp_data
-
-    }else{
-
-      gpfit_list$gpfit_data <- bind_rows(estimate_list[names(estimate_list) == "gp_data"])
-
-    }
+    gpfit_list$gpfit_data <- bind_rows(estimate_item("gp_data"))
+    gpfit_list$gp_symbolic_mean <- unlist(unname(estimate_item("gp_symbolic_mean")),
+                                          recursive = FALSE)
 
     slot(object, "gpfit_info") <- gpfit_list
   }
@@ -750,6 +865,8 @@ setMethod(
 
     # Determine max
     filter(mean == max(mean, na.rm = TRUE)) %>%
+    arrange(timepoint) %>%
+    slice(1) %>%
 
     # Format
     select(timepoint, mean) %>%
@@ -818,6 +935,8 @@ setMethod(
 
     # Gather the most negative change
     filter(growth_loss == min(growth_loss, na.rm = TRUE)) %>%
+    arrange(timepoint) %>%
+    slice(1) %>%
     select(growth_loss)
 
 
@@ -838,7 +957,9 @@ setMethod(
  # Determine the maxium growth rate as the maximum of the first derivative
   max_gr <- df %>%
     #filter(timepoint <= max_od_data$max_growth_time) %>%
-    filter(first_derivative == max(first_derivative, na.rm = TRUE)) %>%
+    filter(!is.na(first_derivative)) %>%
+    arrange(desc(first_derivative), timepoint) %>%
+    slice(1) %>%
 
     select(timepoint, first_derivative) %>%
     rename("max_growth_rate_timepoint" = "timepoint",
@@ -883,6 +1004,8 @@ setMethod(
 
     min_gr <- min_gr %>%
       filter(first_derivative == min(first_derivative, na.rm = TRUE)) %>%
+      arrange(timepoint) %>%
+      slice(1) %>%
 
       select(timepoint, first_derivative) %>%
       rename("max_death_rate_timepoint" = "timepoint",
@@ -912,6 +1035,8 @@ setMethod(
 
     # Now find the point with the fastest acceleration. Likely the end of lag phase.
     filter(second_derivative == max(second_derivative, na.rm = TRUE)) %>%
+    arrange(timepoint) %>%
+    slice(1) %>%
 
     select(timepoint, mean) %>%
     rename("lag_phase_timepoint" = "timepoint",
@@ -954,6 +1079,8 @@ setMethod(
     # Now find the point with the fastest de-acceleration Likely the end start of staionary phase.
     statphase_tp <- statphase_tp %>%
       filter(second_derivative == min(second_derivative, na.rm = TRUE)) %>%
+      arrange(timepoint) %>%
+      slice(1) %>%
 
       select(timepoint, mean) %>%
       rename("stationary_phase_timepoint" = "timepoint",
@@ -989,8 +1116,3 @@ setMethod(
 
   stop("NOT IMPLEMENTED YET")
 }
-
-
-
-
-

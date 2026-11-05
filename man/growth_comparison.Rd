@@ -13,7 +13,12 @@ growth_comparison(
   save_gp_data = FALSE,
   permutation_test = FALSE,
   n_permutations = NULL,
-  n_cores = 1
+  n_cores = 1,
+  gp_backend = c("lagp", "exact_gaussian", "exact"),
+  gp_lengthscale = NULL,
+  gp_nugget = NULL,
+  gp_replicate_strategy = c("raw", "aggregate"),
+  optimize_hyperparameters = TRUE
 )
 
 \S4method{growth_comparison}{DGrowthR}(
@@ -24,7 +29,12 @@ growth_comparison(
   save_gp_data = FALSE,
   permutation_test = FALSE,
   n_permutations = NULL,
-  n_cores = 1
+  n_cores = 1,
+  gp_backend = c("lagp", "exact_gaussian", "exact"),
+  gp_lengthscale = NULL,
+  gp_nugget = NULL,
+  gp_replicate_strategy = c("raw", "aggregate"),
+  optimize_hyperparameters = TRUE
 )
 }
 \arguments{
@@ -43,6 +53,24 @@ growth_comparison(
 \item{n_permutations}{A numerical values indicating the number of permutations to build in order to gather the null distribution of test statistics.}
 
 \item{n_cores}{A numeric value indicating the number cores to be used. Useful when performing a permutation test.}
+
+\item{gp_backend}{A character value indicating which GP backend to use. The
+default \code{"lagp"} preserves previous DGrowthR behavior. The \code{"exact_gaussian"}
+backend uses DGrowthR's built-in dense Gaussian-kernel GP for short growth
+trajectories. The old \code{"exact"} value is accepted as an alias.}
+
+\item{gp_lengthscale}{Optional Gaussian-kernel lengthscale value or vector.}
+
+\item{gp_nugget}{Optional observation-noise variance used as a nugget for
+numerical stability.}
+
+\item{gp_replicate_strategy}{A character value indicating whether replicate
+rows with identical covariates should be used as raw observations or
+aggregated to unbiased mean estimates with heteroskedastic nugget weights.}
+
+\item{optimize_hyperparameters}{A logical value. If \code{TRUE}, estimate GP
+lengthscale and nugget by maximum likelihood. Set to \code{FALSE} for faster
+fits using initial hyperparameter values.}
 }
 \value{
 An object with the updated growth_comparison slot.

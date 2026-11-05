@@ -4,12 +4,34 @@
 \alias{.fit_gp}
 \title{Fit a Gaussian process model to data}
 \usage{
-.fit_gp(X_data, delete = FALSE)
+.fit_gp(
+  X_data,
+  delete = FALSE,
+  gp_backend = "lagp",
+  gp_lengthscale = NULL,
+  gp_nugget = NULL,
+  gp_replicate_strategy = "raw",
+  optimize_hyperparameters = TRUE
+)
 }
 \arguments{
 \item{X_data}{A data.frame containing the covariates used for model fitting. Should have at least timepoint, timepoint_n, and od columns.}
 
 \item{delete}{A logical value. If TRUE, the Gaussian process model will be deleted after fitting.}
+
+\item{gp_backend}{A character value indicating which GP backend to use.}
+
+\item{gp_lengthscale}{Optional Gaussian-kernel lengthscale value or vector.}
+
+\item{gp_nugget}{Optional observation-noise variance used as a nugget for
+numerical stability.}
+
+\item{gp_replicate_strategy}{A character value indicating whether replicate
+rows with identical covariates should be used as raw observations or
+aggregated to unbiased mean estimates with heteroskedastic nugget weights.}
+
+\item{optimize_hyperparameters}{A logical value. If TRUE, estimate the
+lengthscale and nugget by maximum likelihood.}
 }
 \value{
 The input object, with the Gaussian process model information as a list

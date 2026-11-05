@@ -162,6 +162,11 @@ setGeneric(name = "gather_od_data", function(object, metadata_field, field_value
 #' @export
 setMethod(f = "gather_od_data", signature = "DGrowthR", definition = function(object, metadata_field, field_value, downsample_every_n_timepoints=1) {
 
+  if (downsample_every_n_timepoints > 1 &&
+      !is.null(attr(object@od_data, "subsampled_timepoints"))) {
+    stop("This object was already subsampled; use downsample_every_n_timepoints = 1.")
+  }
+
   # Gather the od_data and metadata
   od_data <- object@od_data
   metadata <- object@metadata
@@ -206,10 +211,11 @@ setMethod(f = "gather_od_data", signature = "DGrowthR", definition = function(ob
 utils::globalVariables(c("Time", "V1", "V2", "color_covar", "color_var", "contrast_list", "contrast_val",
                          "covariate_value", "curve_id", "diag.sigma", "empirical_p.value", "facet_var",
                          "first_derivative", "fpc1", "fpc2", "gpfit_id", "growth_loss", "i", "kn_dist", "lr",
-                         "max_growth_rate", "object.comparison", "od", "od_alt", "od_diff", "od_null", "pseudo_od",
+                         "max_growth_rate", "object.comparison", "od", "od_alt", "od_diff", "od_null", "pseudo_od", ".data",
                          "q1", "q2", "refline_dist", "sampled_id", "second_derivative", "str_remove",
                          "str_split_i", "timepoint", "timepoint_n", "type", "value", "variable", "well",
                          "perm_vals", "comparison", "nperm", "gpfit_converged",
+                         ".group_value", ".landmark", ".score",
                          "likelihood_ratio", "n_growth_phases", "phase"))
 
 
@@ -299,4 +305,3 @@ setMethod(
     print(head(object@od_data))
   }
 )
-
