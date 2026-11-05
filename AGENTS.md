@@ -1,10 +1,12 @@
 # DGrowthR Development
 
-This checkout is the bio-datascience DGrowthR codebase on the
-`codex/dgrowthr-development` branch. The package version associated with the
-manuscript under review must remain unchanged. Do not push, merge, or open a
-pull request without the user's explicit request; in particular, never push
-directly to the bio-datascience main branch.
+This checkout belongs to the group repository `bio-datascience/DGrowthR` and
+is on the `codex/dgrowthr-development` integration branch. The package version
+associated with the manuscript under review must remain unchanged on `main`.
+Multiple students contribute to the group repository, so use separate feature
+branches for independent work and review changes before merging them into the
+integration branch. Do not push, merge, or open a pull request without the
+user's explicit request; never push development changes directly to `main`.
 
 Read `docs/development_release.md` before release or Git work. Keep GP fitting,
 prediction, growth-parameter estimation, and fit QC separate. Preserve the

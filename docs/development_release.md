@@ -1,9 +1,12 @@
 # DGrowthR development release
 
-The `codex/dgrowthr-development` branch is the integrated development line for
-DGrowthR 1.1 (`DESCRIPTION` version `1.1.0.9000`). It is separate from the
-package version under manuscript review. Do not push this branch to the main
-repository or open upstream pull requests without an explicit decision.
+The group repository `bio-datascience/DGrowthR` is the home for all DGrowthR
+development. The `codex/dgrowthr-development` branch is the integrated
+development line for DGrowthR 1.1 (`DESCRIPTION` version `1.1.0.9000`). It is
+separate from `main`, which holds the package version under manuscript review.
+Multiple students contribute to the repository; independent work should use
+separate feature branches and be reviewed before integration. Do not push,
+merge, or open a pull request without an explicit decision.
 
 ## Scope of the development line
 
@@ -23,7 +26,7 @@ repository or open upstream pull requests without an explicit decision.
   fitting and GP-specific uncertainty diagnostics until its statistical
   contract has been defined and validated. See `docs/spline_contribution.md`.
 
-## Release gates before a fork push
+## Integration and release gates
 
 1. Install missing R dependencies and run `R CMD check` on a built tarball.
 2. Test fit/predict/QC, subsampling, comparison, and permutation paths together
@@ -32,9 +35,11 @@ repository or open upstream pull requests without an explicit decision.
 3. Compare exact-GP and laGP numerical behavior and runtimes on the package's
    representative short trajectories.
 4. Review API documentation and compatibility with existing scripts.
-5. Confirm the fork remote and push only to the user's fork.
+5. Confirm the group-repository remote and publish only the intended feature or
+   integration branch; do not update `main` directly.
 
-Upstream pull requests can later be split by behavior: exact GP backend,
+Pull requests into `main` can later be split by behavior: exact GP backend,
 workflow API and QC, subsampling and inference integration, then a spline
-modelling extension after its own validation. This document is a release plan,
-not authorization to push or open a PR.
+modelling extension after its own validation. The spline student should work
+on a separate feature branch from the GP integration branch. This document is
+a release plan, not authorization to push or open a PR.
